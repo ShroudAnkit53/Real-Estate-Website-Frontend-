@@ -45,5 +45,4 @@ This project focuses on providing a clean UI/UX for showcasing property listings
 
 ---
 
-## 📂 Project Structure
 
