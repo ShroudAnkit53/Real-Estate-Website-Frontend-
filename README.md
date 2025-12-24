@@ -14,3 +14,36 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+# 🏡 Real Estate Website – Frontend
+
+A modern and responsive **Real Estate Website Frontend** built using **React + Vite**.  
+This project focuses on providing a clean UI/UX for showcasing property listings and improving user experience.
+
+---
+
+## 🚀 Features
+
+- 🏘️ Property listings with images and details  
+- 🔍 Search and filter properties  
+- 📱 Fully responsive design  
+- 🎨 Modern and clean UI  
+- 🧭 Smooth navigation  
+- ⚡ Fast performance with Vite  
+
+---
+
+## 🛠️ Tech Stack
+
+- **React.js** – Component-based UI  
+- **Vite** – Fast build tool and dev server  
+- **HTML5**  
+- **CSS3**  
+- **JavaScript (ES6+)**
+
+> ⚠️ This is a **frontend-only** project. No backend or database is connected.
+
+---
+
+## 📂 Project Structure
+
