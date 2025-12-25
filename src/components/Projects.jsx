@@ -9,6 +9,26 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTenure, setSelectedTenure] = useState(10);
+  // --- Add Estate Feature ---
+const [showAddEstate, setShowAddEstate] = useState(false);
+const [newEstate, setNewEstate] = useState({
+  title: "",
+  price: "",
+  location: "",
+  status: "Listed",
+  description: "",
+  features: [""],
+  timeline: {
+    duration: "",
+    area: "",
+    completionDate: "",
+    teamSize: "",
+  },
+  photo: null,
+});
+
+const [userEstates, setUserEstates] = useState([]);
+
 
   useEffect(() => {
     const updateCardsToShow = () => {
@@ -62,7 +82,65 @@ const nextSlide = () => {
     setSelectedProject(null);
     document.body.style.overflow = "auto"; // Restore scrolling
   };
+const handleAddEstate = () => {
+  if (
+    !newEstate.title ||
+    !newEstate.price ||
+    !newEstate.location ||
+    !newEstate.description ||
+    !newEstate.photo
+  ) {
+    alert("Please fill all required fields and upload a photo.");
+    return;
+  }
 
+
+  const photoURL = URL.createObjectURL(newEstate.photo);
+const basePrice = Number(newEstate.price);
+const finalPrice = basePrice + basePrice * 0.15;
+  const estateCard = {
+    id: Date.now(), 
+    title: newEstate.title,
+    basePrice,
+    price: `₹${Number(newEstate.price).toLocaleString()}`,
+    location: newEstate.location,
+    image: photoURL,
+    status: newEstate.status,
+    description: newEstate.description,
+    features: newEstate.features.filter(f => f.trim() !== ""),
+    timeline: {
+      duration: newEstate.timeline.duration,
+      area: newEstate.timeline.area,
+      completionDate: newEstate.timeline.completionDate,
+      teamSize: newEstate.timeline.teamSize,
+    },
+     isUserListed: true
+  };
+
+  setUserEstates(prev => [...prev, estateCard]);
+
+  setShowAddEstate(false);
+
+  // reset form
+  setNewEstate({
+    title: "",
+    price: "",
+    location: "",
+    status: "Listed",
+    description: "",
+    features: [""],
+    timeline: {
+      duration: "",
+      area: "",
+      completionDate: "",
+      teamSize: "",
+    },
+    photo: null,
+  });
+};
+const handleDeleteEstate = (id) => {
+  setUserEstates(prev => prev.filter(e => e.id !== id));
+};
   return (
     <motion.div
       initial={{ opacity: 0, x: -200 }}
@@ -84,6 +162,12 @@ const nextSlide = () => {
         <p className="text-gray-500 max-w-xl mx-auto mb-8">
           Crafting Spaces, Building Legacies - Explore Our Portfolio
         </p>
+<button
+  onClick={() => setShowAddEstate(true)}
+  className="mt-4 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
+>
+  Add Your Estate
+</button>
 
         {/* View All Button - Right aligned (desktop only) */}
         {!isViewAll && (
@@ -155,7 +239,193 @@ const nextSlide = () => {
           </motion.button>
         </div>
       )}
+{showAddEstate && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
 
+      <h2 className="text-xl font-bold mb-4">Add Your Estate</h2>
+
+      {/* Title */}
+      <input
+        type="text"
+        placeholder="Property Title"
+        className="w-full border p-2 rounded mb-3"
+        value={newEstate.title}
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, title: e.target.value })
+        }
+      />
+
+      {/* Price */}
+      <input
+        type="number"
+        placeholder="Price (₹)"
+        className="w-full border p-2 rounded mb-3"
+        value={newEstate.price}
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, price: e.target.value })
+        }
+      />
+
+      {/* Location */}
+      <input
+        type="text"
+        placeholder="Location"
+        className="w-full border p-2 rounded mb-3"
+        value={newEstate.location}
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, location: e.target.value })
+        }
+      />
+
+      {/* Status */}
+      <select
+        className="w-full border p-2 rounded mb-3"
+        value={newEstate.status}
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, status: e.target.value })
+        }
+      >
+        <option value="Completed">Completed</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Upcoming">Upcoming</option>
+      </select>
+
+      {/* Description */}
+      <textarea
+        placeholder="Description"
+        className="w-full border p-2 rounded mb-3"
+        rows="3"
+        value={newEstate.description}
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, description: e.target.value })
+        }
+      />
+
+      {/* FEATURES */}
+      <label className="font-semibold">Features</label>
+
+      {newEstate.features.map((feature, i) => (
+        <input
+          key={i}
+          type="text"
+          className="w-full border p-2 rounded mb-2"
+          placeholder={`Feature ${i + 1}`}
+          value={feature}
+          onChange={(e) => {
+            const copy = [...newEstate.features];
+            copy[i] = e.target.value;
+            setNewEstate({ ...newEstate, features: copy });
+          }}
+        />
+      ))}
+
+      <button
+        className="text-blue-600 text-sm mb-3"
+        onClick={() =>
+          setNewEstate({
+            ...newEstate,
+            features: [...newEstate.features, ""],
+          })
+        }
+      >
+        + Add Feature
+      </button>
+
+      {/* TIMELINE */}
+      <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
+
+      <input
+        type="text"
+        placeholder="Duration (e.g., 14 Months)"
+        className="w-full border p-2 rounded mb-2"
+        value={newEstate.timeline.duration}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, duration: e.target.value },
+          })
+        }
+      />
+
+      <input
+        type="text"
+        placeholder="Area (e.g., 4200 Sq. Ft.)"
+        className="w-full border p-2 rounded mb-2"
+        value={newEstate.timeline.area}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, area: e.target.value },
+          })
+        }
+      />
+
+      <input
+        type="text"
+        placeholder="Completion Date"
+        className="w-full border p-2 rounded mb-2"
+        value={newEstate.timeline.completionDate}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: {
+              ...newEstate.timeline,
+              completionDate: e.target.value,
+            },
+          })
+        }
+      />
+
+      <input
+        type="text"
+        placeholder="Team Size"
+        className="w-full border p-2 rounded mb-3"
+        value={newEstate.timeline.teamSize}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: {
+              ...newEstate.timeline,
+              teamSize: e.target.value,
+            },
+          })
+        }
+      />
+
+      {/* IMAGE */}
+      <input
+        type="file"
+        accept="image/*"
+        className="mb-4"
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, photo: e.target.files[0] })
+        }
+      />
+
+      {/* Buttons */}
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setShowAddEstate(false)}
+          className="px-4 py-2 border rounded"
+
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleAddEstate}
+          className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+   
       {/* Project display container */}
       <div className="overflow-hidden relative">
        
@@ -197,8 +467,9 @@ const nextSlide = () => {
   >
 
          
-          {projectsData.map((project, index) => (
-            <motion.div
+        {[...projectsData, ...userEstates].map((project, index) => (
+  <motion.div
+
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -207,6 +478,15 @@ const nextSlide = () => {
             >
               <div className="relative group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
                 {/* Project image */}
+                {project.isUserListed && (
+  <button
+    onClick={() => handleDeleteEstate(project.id)}
+    className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700 transition"
+  >
+    Delete
+  </button>
+)}
+
                 <div className="relative h-64 overflow-hidden">
                   <img
                     src={project.image}
@@ -252,6 +532,12 @@ const nextSlide = () => {
                       <p className="text-lg font-bold text-blue-600">
                         {project.price}
                       </p>
+                      {project.isUserListed && (
+  <p className="text-xs text-gray-500">
+    Includes 15% platform commission
+  </p>
+)}
+
                     </div>
 
                     <button
