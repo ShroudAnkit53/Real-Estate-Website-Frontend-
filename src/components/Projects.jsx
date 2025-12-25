@@ -40,6 +40,18 @@ const Projects = () => {
     setCardsToShow(projectsData.length);
     setCurrentIndex(0);
   };
+  const prevSlide = () => {
+  setCurrentIndex((prev) =>
+    (prev - 1 + projectsData.length) % projectsData.length
+  );
+};
+
+const nextSlide = () => {
+  setCurrentIndex((prev) =>
+    (prev + 1) % projectsData.length
+  );
+};
+
 
   const openProjectDetails = (project) => {
     setSelectedProject(project);
@@ -145,19 +157,46 @@ const Projects = () => {
       )}
 
       {/* Project display container */}
-      <div className="overflow-hidden">
-        <div
-          className={`${
-            isViewAll
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-              : "flex gap-8 transition-transform duration-500 ease-in-out"
-          }`}
-          style={{
-            transform: !isViewAll
-              ? `translateX(-${(currentIndex * 100) / cardsToShow}%)`
-              : "none",
-          }}
-        >
+      <div className="overflow-hidden relative">
+       
+
+  {/* LEFT / RIGHT ARROWS (only in slider mode) */}
+  {!isViewAll &&  (
+    <>
+      <button
+        onClick={prevSlide}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <button
+        onClick={nextSlide}
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </>
+  )}
+
+  <div
+    className={`${
+      isViewAll
+        ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        : "flex gap-8 transition-transform duration-500 ease-in-out"
+    }`}
+    style={{
+      transform: !isViewAll
+        ? `translateX(-${(currentIndex * 100) / cardsToShow}%)`
+        : "none",
+    }}
+  >
+
+         
           {projectsData.map((project, index) => (
             <motion.div
               key={index}
