@@ -393,7 +393,7 @@ const Projects = () => {
             <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
 
             <input
-              type="text"
+              type="number"
               placeholder="Duration (e.g., 14 Months)"
               className="w-full border p-2 rounded mb-2"
               value={newEstate.timeline.duration}
@@ -406,7 +406,7 @@ const Projects = () => {
             />
 
             <input
-              type="text"
+              type="number"
               placeholder="Area (e.g., 4200 Sq. Ft.)"
               className="w-full border p-2 rounded mb-2"
               value={newEstate.timeline.area}
@@ -419,7 +419,7 @@ const Projects = () => {
             />
 
             <input
-              type="text"
+              type="date"
               placeholder="Completion Date"
               className="w-full border p-2 rounded mb-2"
               value={newEstate.timeline.completionDate}
@@ -435,7 +435,7 @@ const Projects = () => {
             />
 
             <input
-              type="text"
+              type="number"
               placeholder="Team Size"
               className="w-full border p-2 rounded mb-3"
               value={newEstate.timeline.teamSize}
