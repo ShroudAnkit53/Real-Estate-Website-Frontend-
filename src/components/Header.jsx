@@ -34,7 +34,7 @@ const Header = () => {
       viewport={{ once: true }}
       className="container text-center mx-auto py-4 px-6 md:px-20 lg:px-32 text-white mt-24"
     >
-      <h2 className="text-4xl sm:text-5xl md:text-[82px] inline-block max-w-3xl font-semibold pt-20">
+      <h2 className="text-4xl sm:text-5xl md:text-[82px] inline-block max-w-3xl font-semibold pt-20 mt-20">
         Explore homes that fits your dream
       </h2>
 
@@ -52,5 +52,6 @@ const Header = () => {
 
   )
 }
+
 
 export default Header
