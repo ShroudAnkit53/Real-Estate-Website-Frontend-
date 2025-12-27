@@ -9,27 +9,70 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTenure, setSelectedTenure] = useState(10);
-  // --- Add Estate Feature ---
-const [showAddEstate, setShowAddEstate] = useState(false);
-const [newEstate, setNewEstate] = useState({
-  title: "",
-  price: "",
-  location: "",
-  status: "Listed",
-  description: "",
-  features: [""],
-  timeline: {
-    duration: "",
-    area: "",
-    completionDate: "",
-    teamSize: "",
-  },
-  photo: null,
-});
 
-const [userEstates, setUserEstates] = useState([]);
+  // FILTER STATE
+  const [showFilter, setShowFilter] = useState(false);
+  const [filters, setFilters] = useState({
+    status: "",
+    location: "",
+    minPrice: "",
+    maxPrice: "",
+    features: [],
+  });
 
+  // ADD ESTATE STATE
+  const [showAddEstate, setShowAddEstate] = useState(false);
+  const [newEstate, setNewEstate] = useState({
+    title: "",
+    price: "",
+    location: "",
+    status: "Listed",
+    description: "",
+    features: [""],
+    timeline: {
+      duration: "",
+      area: "",
+      completionDate: "",
+      teamSize: "",
+    },
+    photo: null,
+  });
 
+  const [userEstates, setUserEstates] = useState([]);
+
+  // ✅ MOVE FILTER LOGIC HERE (BEFORE useEffect)
+  const allProjects = [...projectsData, ...userEstates];
+
+  const availableFeatures = Array.from(
+    new Set(allProjects.flatMap((p) => p.features || []))
+  );
+
+  const filteredProjects = allProjects.filter((project) => {
+    const price = Number(String(project.price || "").replace(/[^0-9]/g, ""));
+
+    if (filters.status && project.status !== filters.status) return false;
+
+    if (
+      filters.location &&
+      !String(project.location || "")
+        .toLowerCase()
+        .includes(filters.location.toLowerCase())
+    )
+      return false;
+
+    if (filters.minPrice && price < Number(filters.minPrice)) return false;
+    if (filters.maxPrice && price > Number(filters.maxPrice)) return false;
+
+    if (
+      filters.features.length &&
+      !filters.features.every((f) => (project.features || []).includes(f))
+    )
+      return false;
+
+    return true;
+  });
+
+  // RESPONSIVE CARDS
   useEffect(() => {
     const updateCardsToShow = () => {
       if (window.innerWidth >= 1024) {
@@ -45,15 +88,20 @@ const [userEstates, setUserEstates] = useState([]);
     return () => window.removeEventListener("resize", updateCardsToShow);
   }, []);
 
-  // Auto slide when not in "View All" mode
+  // AUTO SLIDE (NOW SAFE)
   useEffect(() => {
     if (!isViewAll && cardsToShow === 1 && !selectedProject) {
       const interval = setInterval(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % projectsData.length);
-      }, 4000); // Auto slide every 4 seconds
+        setCurrentIndex((prevIndex) =>
+          filteredProjects.length
+            ? (prevIndex + 1) % filteredProjects.length
+            : 0
+        );
+      }, 4000);
+
       return () => clearInterval(interval);
     }
-  }, [isViewAll, cardsToShow, projectsData.length, selectedProject]);
+  }, [isViewAll, cardsToShow, filteredProjects.length, selectedProject]);
 
   const handleViewAll = () => {
     setIsViewAll(true);
@@ -61,17 +109,18 @@ const [userEstates, setUserEstates] = useState([]);
     setCurrentIndex(0);
   };
   const prevSlide = () => {
-  setCurrentIndex((prev) =>
-    (prev - 1 + projectsData.length) % projectsData.length
-  );
-};
+    setCurrentIndex((prev) =>
+      filteredProjects.length
+        ? (prev - 1 + filteredProjects.length) % filteredProjects.length
+        : 0
+    );
+  };
 
-const nextSlide = () => {
-  setCurrentIndex((prev) =>
-    (prev + 1) % projectsData.length
-  );
-};
-
+  const nextSlide = () => {
+    setCurrentIndex((prev) =>
+      filteredProjects.length ? (prev + 1) % filteredProjects.length : 0
+    );
+  };
 
   const openProjectDetails = (project) => {
     setSelectedProject(project);
@@ -82,65 +131,65 @@ const nextSlide = () => {
     setSelectedProject(null);
     document.body.style.overflow = "auto"; // Restore scrolling
   };
-const handleAddEstate = () => {
-  if (
-    !newEstate.title ||
-    !newEstate.price ||
-    !newEstate.location ||
-    !newEstate.description ||
-    !newEstate.photo
-  ) {
-    alert("Please fill all required fields and upload a photo.");
-    return;
-  }
+  const handleAddEstate = () => {
+    if (
+      !newEstate.title ||
+      !newEstate.price ||
+      !newEstate.location ||
+      !newEstate.description ||
+      !newEstate.photo
+    ) {
+      alert("Please fill all required fields and upload a photo.");
+      return;
+    }
 
+    const photoURL = URL.createObjectURL(newEstate.photo);
+    const basePrice = Number(newEstate.price);
+    const finalPrice = basePrice + basePrice * 0.15;
+    const estateCard = {
+      id: Date.now(),
+      title: newEstate.title,
+      basePrice,
+      price: `₹${Number(newEstate.price).toLocaleString()}`,
+      location: newEstate.location,
+      image: photoURL,
+      status: newEstate.status,
+      description: newEstate.description,
+      features: newEstate.features.filter((f) => f.trim() !== ""),
+      timeline: {
+        duration: newEstate.timeline.duration,
+        area: newEstate.timeline.area,
+        completionDate: newEstate.timeline.completionDate,
+        teamSize: newEstate.timeline.teamSize,
+      },
+      isUserListed: true,
+    };
 
-  const photoURL = URL.createObjectURL(newEstate.photo);
-const basePrice = Number(newEstate.price);
-const finalPrice = basePrice + basePrice * 0.15;
-  const estateCard = {
-    id: Date.now(), 
-    title: newEstate.title,
-    basePrice,
-    price: `₹${Number(newEstate.price).toLocaleString()}`,
-    location: newEstate.location,
-    image: photoURL,
-    status: newEstate.status,
-    description: newEstate.description,
-    features: newEstate.features.filter(f => f.trim() !== ""),
-    timeline: {
-      duration: newEstate.timeline.duration,
-      area: newEstate.timeline.area,
-      completionDate: newEstate.timeline.completionDate,
-      teamSize: newEstate.timeline.teamSize,
-    },
-     isUserListed: true
+    setUserEstates((prev) => [...prev, estateCard]);
+
+    setShowAddEstate(false);
+
+    // reset form
+    setNewEstate({
+      title: "",
+      price: "",
+      location: "",
+      status: "Listed",
+      description: "",
+      features: [""],
+      timeline: {
+        duration: "",
+        area: "",
+        completionDate: "",
+        teamSize: "",
+      },
+      photo: null,
+    });
+  };
+  const handleDeleteEstate = (id) => {
+    setUserEstates((prev) => prev.filter((e) => e.id !== id));
   };
 
-  setUserEstates(prev => [...prev, estateCard]);
-
-  setShowAddEstate(false);
-
-  // reset form
-  setNewEstate({
-    title: "",
-    price: "",
-    location: "",
-    status: "Listed",
-    description: "",
-    features: [""],
-    timeline: {
-      duration: "",
-      area: "",
-      completionDate: "",
-      teamSize: "",
-    },
-    photo: null,
-  });
-};
-const handleDeleteEstate = (id) => {
-  setUserEstates(prev => prev.filter(e => e.id !== id));
-};
   return (
     <motion.div
       initial={{ opacity: 0, x: -200 }}
@@ -162,12 +211,21 @@ const handleDeleteEstate = (id) => {
         <p className="text-gray-500 max-w-xl mx-auto mb-8">
           Crafting Spaces, Building Legacies - Explore Our Portfolio
         </p>
-<button
-  onClick={() => setShowAddEstate(true)}
-  className="mt-4 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
->
-  Add Your Estate
-</button>
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={() => setShowFilter(true)}
+            className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg bg-white hover:bg-gray-100 transition"
+          >
+            Filter
+          </button>
+
+          <button
+            onClick={() => setShowAddEstate(true)}
+            className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
+          >
+            Add Your Estate
+          </button>
+        </div>
 
         {/* View All Button - Right aligned (desktop only) */}
         {!isViewAll && (
@@ -239,237 +297,358 @@ const handleDeleteEstate = (id) => {
           </motion.button>
         </div>
       )}
-{showAddEstate && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-    <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+      {showAddEstate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Add Your Estate</h2>
 
-      <h2 className="text-xl font-bold mb-4">Add Your Estate</h2>
+            {/* Title */}
+            <input
+              type="text"
+              placeholder="Property Title"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.title}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, title: e.target.value })
+              }
+            />
 
-      {/* Title */}
-      <input
-        type="text"
-        placeholder="Property Title"
-        className="w-full border p-2 rounded mb-3"
-        value={newEstate.title}
-        onChange={(e) =>
-          setNewEstate({ ...newEstate, title: e.target.value })
-        }
-      />
+            {/* Price */}
+            <input
+              type="number"
+              placeholder="Price (₹)"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.price}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, price: e.target.value })
+              }
+            />
 
-      {/* Price */}
-      <input
-        type="number"
-        placeholder="Price (₹)"
-        className="w-full border p-2 rounded mb-3"
-        value={newEstate.price}
-        onChange={(e) =>
-          setNewEstate({ ...newEstate, price: e.target.value })
-        }
-      />
+            {/* Location */}
+            <input
+              type="text"
+              placeholder="Location"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.location}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, location: e.target.value })
+              }
+            />
 
-      {/* Location */}
-      <input
-        type="text"
-        placeholder="Location"
-        className="w-full border p-2 rounded mb-3"
-        value={newEstate.location}
-        onChange={(e) =>
-          setNewEstate({ ...newEstate, location: e.target.value })
-        }
-      />
+            {/* Status */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.status}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, status: e.target.value })
+              }
+            >
+              <option value="Completed">Completed</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Upcoming">Upcoming</option>
+            </select>
 
-      {/* Status */}
-      <select
-        className="w-full border p-2 rounded mb-3"
-        value={newEstate.status}
-        onChange={(e) =>
-          setNewEstate({ ...newEstate, status: e.target.value })
-        }
-      >
-        <option value="Completed">Completed</option>
-        <option value="In Progress">In Progress</option>
-        <option value="Upcoming">Upcoming</option>
-      </select>
+            {/* Description */}
+            <textarea
+              placeholder="Description"
+              className="w-full border p-2 rounded mb-3"
+              rows="3"
+              value={newEstate.description}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, description: e.target.value })
+              }
+            />
 
-      {/* Description */}
-      <textarea
-        placeholder="Description"
-        className="w-full border p-2 rounded mb-3"
-        rows="3"
-        value={newEstate.description}
-        onChange={(e) =>
-          setNewEstate({ ...newEstate, description: e.target.value })
-        }
-      />
+            {/* FEATURES */}
+            <label className="font-semibold">Features</label>
 
-      {/* FEATURES */}
-      <label className="font-semibold">Features</label>
+            {newEstate.features.map((feature, i) => (
+              <input
+                key={i}
+                type="text"
+                className="w-full border p-2 rounded mb-2"
+                placeholder={`Feature ${i + 1}`}
+                value={feature}
+                onChange={(e) => {
+                  const copy = [...newEstate.features];
+                  copy[i] = e.target.value;
+                  setNewEstate({ ...newEstate, features: copy });
+                }}
+              />
+            ))}
 
-      {newEstate.features.map((feature, i) => (
-        <input
-          key={i}
-          type="text"
-          className="w-full border p-2 rounded mb-2"
-          placeholder={`Feature ${i + 1}`}
-          value={feature}
-          onChange={(e) => {
-            const copy = [...newEstate.features];
-            copy[i] = e.target.value;
-            setNewEstate({ ...newEstate, features: copy });
-          }}
-        />
-      ))}
+            <button
+              className="text-blue-600 text-sm mb-3"
+              onClick={() =>
+                setNewEstate({
+                  ...newEstate,
+                  features: [...newEstate.features, ""],
+                })
+              }
+            >
+              + Add Feature
+            </button>
 
-      <button
-        className="text-blue-600 text-sm mb-3"
-        onClick={() =>
-          setNewEstate({
-            ...newEstate,
-            features: [...newEstate.features, ""],
-          })
-        }
-      >
-        + Add Feature
-      </button>
+            {/* TIMELINE */}
+            <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
 
-      {/* TIMELINE */}
-      <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
+            <input
+              type="text"
+              placeholder="Duration (e.g., 14 Months)"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.duration}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: { ...newEstate.timeline, duration: e.target.value },
+                })
+              }
+            />
 
-      <input
-        type="text"
-        placeholder="Duration (e.g., 14 Months)"
-        className="w-full border p-2 rounded mb-2"
-        value={newEstate.timeline.duration}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, duration: e.target.value },
-          })
-        }
-      />
+            <input
+              type="text"
+              placeholder="Area (e.g., 4200 Sq. Ft.)"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.area}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: { ...newEstate.timeline, area: e.target.value },
+                })
+              }
+            />
 
-      <input
-        type="text"
-        placeholder="Area (e.g., 4200 Sq. Ft.)"
-        className="w-full border p-2 rounded mb-2"
-        value={newEstate.timeline.area}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, area: e.target.value },
-          })
-        }
-      />
+            <input
+              type="text"
+              placeholder="Completion Date"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.completionDate}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: {
+                    ...newEstate.timeline,
+                    completionDate: e.target.value,
+                  },
+                })
+              }
+            />
 
-      <input
-        type="text"
-        placeholder="Completion Date"
-        className="w-full border p-2 rounded mb-2"
-        value={newEstate.timeline.completionDate}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: {
-              ...newEstate.timeline,
-              completionDate: e.target.value,
-            },
-          })
-        }
-      />
+            <input
+              type="text"
+              placeholder="Team Size"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.timeline.teamSize}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: {
+                    ...newEstate.timeline,
+                    teamSize: e.target.value,
+                  },
+                })
+              }
+            />
 
-      <input
-        type="text"
-        placeholder="Team Size"
-        className="w-full border p-2 rounded mb-3"
-        value={newEstate.timeline.teamSize}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: {
-              ...newEstate.timeline,
-              teamSize: e.target.value,
-            },
-          })
-        }
-      />
+            {/* IMAGE */}
+            <input
+              type="file"
+              accept="image/*"
+              className="mb-4"
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, photo: e.target.files[0] })
+              }
+            />
 
-      {/* IMAGE */}
-      <input
-        type="file"
-        accept="image/*"
-        className="mb-4"
-        onChange={(e) =>
-          setNewEstate({ ...newEstate, photo: e.target.files[0] })
-        }
-      />
+            {/* Buttons */}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowAddEstate(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancel
+              </button>
 
-      {/* Buttons */}
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={() => setShowAddEstate(false)}
-          className="px-4 py-2 border rounded"
+              <button
+                onClick={handleAddEstate}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-        >
-          Cancel
-        </button>
+      {showFilter && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Filter Projects</h2>
 
-        <button
-          onClick={handleAddEstate}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Submit
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            {/* STATUS */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={filters.status}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
+            >
+              <option value="">All Status</option>
+              <option value="Completed">Completed</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Upcoming">Upcoming</option>
+            </select>
 
+            {/* LOCATION */}
+            <input
+              type="text"
+              placeholder="Location"
+              className="w-full border p-2 rounded mb-3"
+              value={filters.location}
+              onChange={(e) =>
+                setFilters({ ...filters, location: e.target.value })
+              }
+            />
 
-   
+            {/* PRICE RANGE */}
+            <div className="flex gap-3 mb-3">
+              <input
+                type="number"
+                placeholder="Min ₹"
+                className="w-full border p-2 rounded"
+                value={filters.minPrice}
+                onChange={(e) =>
+                  setFilters({ ...filters, minPrice: e.target.value })
+                }
+              />
+              <input
+                type="number"
+                placeholder="Max ₹"
+                className="w-full border p-2 rounded"
+                value={filters.maxPrice}
+                onChange={(e) =>
+                  setFilters({ ...filters, maxPrice: e.target.value })
+                }
+              />
+            </div>
+
+            {/* FEATURES */}
+            <label className="font-semibold mb-2 block">Features</label>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {availableFeatures.length === 0 ? (
+                <p className="text-sm text-gray-500 col-span-2">
+                  No features available to filter.
+                </p>
+              ) : (
+                availableFeatures.map((feature, i) => (
+                  <label key={i} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={filters.features.includes(feature)}
+                      onChange={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          features: prev.features.includes(feature)
+                            ? prev.features.filter((f) => f !== feature)
+                            : [...prev.features, feature],
+                        }))
+                      }
+                    />
+                    {feature}
+                  </label>
+                ))
+              )}
+            </div>
+
+            {/* BUTTONS */}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() =>
+                  setFilters({
+                    status: "",
+                    location: "",
+                    minPrice: "",
+                    maxPrice: "",
+                    features: [],
+                  })
+                }
+                className="px-4 py-2 border rounded"
+              >
+                Clear
+              </button>
+
+              <button
+                onClick={() => setShowFilter(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Project display container */}
       <div className="overflow-hidden relative">
-       
+        {/* LEFT / RIGHT ARROWS (only in slider mode) */}
+        {!isViewAll && (
+          <>
+            <button
+              onClick={prevSlide}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
 
-  {/* LEFT / RIGHT ARROWS (only in slider mode) */}
-  {!isViewAll &&  (
-    <>
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
+            <button
+              onClick={nextSlide}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </>
+        )}
 
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-    </>
-  )}
-
-  <div
-    className={`${
-      isViewAll
-        ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        : "flex gap-8 transition-transform duration-500 ease-in-out"
-    }`}
-    style={{
-      transform: !isViewAll
-        ? `translateX(-${(currentIndex * 100) / cardsToShow}%)`
-        : "none",
-    }}
-  >
-
-         
-        {[...projectsData, ...userEstates].map((project, index) => (
-  <motion.div
-
+        <div
+          className={`${
+            isViewAll
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              : "flex gap-8 transition-transform duration-500 ease-in-out"
+          }`}
+          style={{
+            transform: !isViewAll
+              ? `translateX(-${(currentIndex * 100) / cardsToShow}%)`
+              : "none",
+          }}
+        >
+          {filteredProjects.map((project, index) => (
+            <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -479,13 +658,13 @@ const handleDeleteEstate = (id) => {
               <div className="relative group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
                 {/* Project image */}
                 {project.isUserListed && (
-  <button
-    onClick={() => handleDeleteEstate(project.id)}
-    className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700 transition"
-  >
-    Delete
-  </button>
-)}
+                  <button
+                    onClick={() => handleDeleteEstate(project.id)}
+                    className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700 transition"
+                  >
+                    Delete
+                  </button>
+                )}
 
                 <div className="relative h-64 overflow-hidden">
                   <img
@@ -533,11 +712,10 @@ const handleDeleteEstate = (id) => {
                         {project.price}
                       </p>
                       {project.isUserListed && (
-  <p className="text-xs text-gray-500">
-    Includes 15% platform commission
-  </p>
-)}
-
+                        <p className="text-xs text-gray-500">
+                          Includes 15% platform commission
+                        </p>
+                      )}
                     </div>
 
                     <button
@@ -573,7 +751,7 @@ const handleDeleteEstate = (id) => {
         {/* Dots indicator (only in slider mode) */}
         {!isViewAll && cardsToShow === 1 && (
           <div className="flex justify-center mt-10 space-x-2">
-            {projectsData.map((_, index) => (
+            {filteredProjects.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
