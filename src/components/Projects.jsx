@@ -200,31 +200,35 @@ const Projects = () => {
       id="Projects"
     >
       {/* Centered Header */}
-      <div className="text-center mb-12 relative">
+      <div className="mb-12 relative">
         {/* Centered Title and Description */}
-        <h1 className="text-2xl sm:text-4xl font-bold mb-3">
-          Projects{" "}
-          <span className="underline underline-offset-4 decoration-1 font-light">
-            Completed
-          </span>
-        </h1>
-        <p className="text-gray-500 max-w-xl mx-auto mb-8">
-          Crafting Spaces, Building Legacies - Explore Our Portfolio
-        </p>
-        <div className="flex justify-center gap-4 mt-4">
-          <button
-            onClick={() => setShowFilter(true)}
-            className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg bg-white hover:bg-gray-100 transition"
-          >
-            Filter
-          </button>
+       <div className="flex items-center justify-between flex-wrap gap-4">
+    
+    {/* LEFT — Buttons */}
+    <div className="flex gap-3">
+      <button
+        onClick={() => setShowFilter(true)}
+        className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg bg-white hover:bg-gray-100 transition"
+      >
+        Filter
+      </button>
 
-          <button
-            onClick={() => setShowAddEstate(true)}
-            className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
-          >
-            Add Your Estate
-          </button>
+      <button
+        onClick={() => setShowAddEstate(true)}
+        className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
+      >
+        Add Your Estate
+      </button>
+    </div>
+
+    {/* RIGHT — Title */}
+    <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-4xl font-bold text-center">
+  Projects{" "}
+  <span className="underline underline-offset-4 decoration-1 font-light">
+    Completed
+  </span>
+</h1>
+
         </div>
 
         {/* View All Button - Right aligned (desktop only) */}
