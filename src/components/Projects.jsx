@@ -304,178 +304,201 @@ const Projects = () => {
       {showAddEstate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Add Your Estate</h2>
+            <h2 className="text-2xl font-bold mb-6">Add Your Estate</h2>
 
-            {/* Title */}
-            <input
-              type="text"
-              placeholder="Property Title"
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.title}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, title: e.target.value })
-              }
-            />
+<div className="space-y-6">
 
-            {/* Price */}
-            <input
-              type="number"
-              placeholder="Price (₹)"
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.price}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, price: e.target.value })
-              }
-            />
+  {/* BASIC INFO */}
+  <div className="space-y-3">
+    <h3 className="font-semibold text-gray-700">Basic Information</h3>
 
-            {/* Location */}
-            <input
-              type="text"
-              placeholder="Location"
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.location}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, location: e.target.value })
-              }
-            />
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <input
+        type="text"
+        placeholder="Property Title"
+        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+        value={newEstate.title}
+        onChange={(e) => setNewEstate({ ...newEstate, title: e.target.value })}
+      />
 
-            {/* Status */}
-            <select
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.status}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, status: e.target.value })
-              }
-            >
-              <option value="Completed">Completed</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Upcoming">Upcoming</option>
-            </select>
+      <input
+        type="number"
+        placeholder="Listing Price (₹)"
+        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+        value={newEstate.price}
+        onChange={(e) => setNewEstate({ ...newEstate, price: e.target.value })}
+      />
+    </div>
 
-            {/* Description */}
-            <textarea
-              placeholder="Description"
-              className="w-full border p-2 rounded mb-3"
-              rows="3"
-              value={newEstate.description}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, description: e.target.value })
-              }
-            />
+    <input
+      type="text"
+      placeholder="Location"
+      className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 outline-none"
+      value={newEstate.location}
+      onChange={(e) =>
+        setNewEstate({ ...newEstate, location: e.target.value })
+      }
+    />
 
-            {/* FEATURES */}
-            <label className="font-semibold">Features</label>
+    <select
+      className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 outline-none"
+      value={newEstate.status}
+      onChange={(e) =>
+        setNewEstate({ ...newEstate, status: e.target.value })
+      }
+    >
+      <option value="Completed">Completed</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Upcoming">Upcoming</option>
+    </select>
 
-            {newEstate.features.map((feature, i) => (
-              <input
-                key={i}
-                type="text"
-                className="w-full border p-2 rounded mb-2"
-                placeholder={`Feature ${i + 1}`}
-                value={feature}
-                onChange={(e) => {
-                  const copy = [...newEstate.features];
-                  copy[i] = e.target.value;
-                  setNewEstate({ ...newEstate, features: copy });
-                }}
-              />
-            ))}
+    <textarea
+      placeholder="Short description about the property"
+      rows={3}
+      className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 outline-none"
+      value={newEstate.description}
+      onChange={(e) =>
+        setNewEstate({ ...newEstate, description: e.target.value })
+      }
+    />
+  </div>
 
-            <button
-              className="text-blue-600 text-sm mb-3"
-              onClick={() =>
-                setNewEstate({
-                  ...newEstate,
-                  features: [...newEstate.features, ""],
-                })
-              }
-            >
-              + Add Feature
-            </button>
+  {/* FEATURES */}
+  <div className="space-y-3">
+    <h3 className="font-semibold text-gray-700">Key Features</h3>
 
-            {/* TIMELINE */}
-            <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
+    {newEstate.features.map((f, i) => (
+      <input
+        key={i}
+        type="text"
+        placeholder={`Feature ${i + 1}`}
+        className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 outline-none"
+        value={f}
+        onChange={(e) => {
+          const copy = [...newEstate.features];
+          copy[i] = e.target.value;
+          setNewEstate({ ...newEstate, features: copy });
+        }}
+      />
+    ))}
 
-            <input
-              type="number"
-              placeholder="Duration (e.g., 14 Months)"
-              className="w-full border p-2 rounded mb-2"
-              value={newEstate.timeline.duration}
-              onChange={(e) =>
-                setNewEstate({
-                  ...newEstate,
-                  timeline: { ...newEstate.timeline, duration: e.target.value },
-                })
-              }
-            />
+    <button
+      className="text-blue-600 text-sm"
+      onClick={() =>
+        setNewEstate({ ...newEstate, features: [...newEstate.features, ""] })
+      }
+    >
+      + Add another feature
+    </button>
+  </div>
 
-            <input
-              type="number"
-              placeholder="Area (e.g., 4200 Sq. Ft.)"
-              className="w-full border p-2 rounded mb-2"
-              value={newEstate.timeline.area}
-              onChange={(e) =>
-                setNewEstate({
-                  ...newEstate,
-                  timeline: { ...newEstate.timeline, area: e.target.value },
-                })
-              }
-            />
+  {/* TIMELINE */}
+  <div className="space-y-3">
+    <h3 className="font-semibold text-gray-700">Project Details</h3>
 
-            <input
-              type="date"
-              placeholder="Completion Date"
-              className="w-full border p-2 rounded mb-2"
-              value={newEstate.timeline.completionDate}
-              onChange={(e) =>
-                setNewEstate({
-                  ...newEstate,
-                  timeline: {
-                    ...newEstate.timeline,
-                    completionDate: e.target.value,
-                  },
-                })
-              }
-            />
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <input
+        type="text"
+        placeholder="Duration (e.g., 14 Months)"
+        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+        value={newEstate.timeline.duration}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, duration: e.target.value },
+          })
+        }
+      />
 
-            <input
-              type="number"
-              placeholder="Team Size"
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.timeline.teamSize}
-              onChange={(e) =>
-                setNewEstate({
-                  ...newEstate,
-                  timeline: {
-                    ...newEstate.timeline,
-                    teamSize: e.target.value,
-                  },
-                })
-              }
-            />
+      <input
+        type="text"
+        placeholder="Area (e.g., 4200 Sq.Ft.)"
+        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+        value={newEstate.timeline.area}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, area: e.target.value },
+          })
+        }
+      />
 
-            {/* IMAGE */}
-            <input
-              type="file"
-              accept="image/*"
-              className="mb-4"
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, photo: e.target.files[0] })
-              }
-            />
+      <input
+        type="date"
+        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+        value={newEstate.timeline.completionDate}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: {
+              ...newEstate.timeline,
+              completionDate: e.target.value,
+            },
+          })
+        }
+      />
+
+      <input
+        type="number"
+        placeholder="Team Size"
+        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+        value={newEstate.timeline.teamSize}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, teamSize: e.target.value },
+          })
+        }
+      />
+    </div>
+  </div>
+
+  {/* PHOTO UPLOAD */}
+  <div className="space-y-2">
+    <h3 className="font-semibold text-gray-700">Property Image</h3>
+
+    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-5 cursor-pointer hover:bg-gray-50 transition">
+      <span className="text-gray-500">
+        {newEstate.photo ? "Change Image" : "Click to upload image"}
+      </span>
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, photo: e.target.files[0] })
+        }
+      />
+    </label>
+
+    {newEstate.photo && (
+      <img
+        src={URL.createObjectURL(newEstate.photo)}
+        className="mt-3 rounded-lg shadow h-36 w-full object-cover"
+        alt="preview"
+      />
+    )}
+
+    <p className="text-xs text-gray-500">
+      Recommended: JPG / PNG — up to 5 MB
+    </p>
+  </div>
+</div>
+
+
 
             {/* Buttons */}
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowAddEstate(false)}
-                className="px-4 py-2 border rounded"
+                className="px-4 py-2 border rounded cursor-pointer"
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleAddEstate}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
+                className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer"
               >
                 Submit
               </button>
