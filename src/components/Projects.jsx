@@ -9,11 +9,13 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTenure, setSelectedTenure] = useState(10);
+  const [transactionFilter, setTransactionFilter] = useState("All");
 
   // FILTER STATE
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState({
     status: "",
+    transactionType: "",
     location: "",
     minPrice: "",
     maxPrice: "",
@@ -50,8 +52,17 @@ const Projects = () => {
   const filteredProjects = allProjects.filter((project) => {
     const price = Number(String(project.price || "").replace(/[^0-9]/g, ""));
 
+    // STATUS
     if (filters.status && project.status !== filters.status) return false;
 
+    // RENT / PURCHASE ✅ FIX ADDED
+    if (
+      filters.transactionType &&
+      project.transactionType !== filters.transactionType
+    )
+      return false;
+
+    // LOCATION
     if (
       filters.location &&
       !String(project.location || "")
@@ -60,9 +71,11 @@ const Projects = () => {
     )
       return false;
 
+    // PRICE
     if (filters.minPrice && price < Number(filters.minPrice)) return false;
     if (filters.maxPrice && price > Number(filters.maxPrice)) return false;
 
+    // FEATURES
     if (
       filters.features.length &&
       !filters.features.every((f) => (project.features || []).includes(f))
@@ -202,33 +215,31 @@ const Projects = () => {
       {/* Centered Header */}
       <div className="mb-12 relative">
         {/* Centered Title and Description */}
-       <div className="flex items-center justify-between flex-wrap gap-4">
-    
-    {/* LEFT — Buttons */}
-    <div className="flex gap-3">
-      <button
-        onClick={() => setShowFilter(true)}
-        className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg bg-white hover:bg-gray-100 transition"
-      >
-        Filter
-      </button>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          {/* LEFT — Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowFilter(true)}
+              className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg bg-white hover:bg-gray-100 transition"
+            >
+              Filter
+            </button>
 
-      <button
-        onClick={() => setShowAddEstate(true)}
-        className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
-      >
-        Add Your Estate
-      </button>
-    </div>
+            <button
+              onClick={() => setShowAddEstate(true)}
+              className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
+            >
+              Add Your Estate
+            </button>
+          </div>
 
-    {/* RIGHT — Title */}
-    <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-4xl font-bold text-center">
-  Projects{" "}
-  <span className="underline underline-offset-4 decoration-1 font-light">
-    Completed
-  </span>
-</h1>
-
+          {/* RIGHT — Title */}
+          <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-4xl font-bold text-center">
+            Projects{" "}
+            <span className="underline underline-offset-4 decoration-1 font-light">
+              Completed
+            </span>
+          </h1>
         </div>
 
         {/* View All Button - Right aligned (desktop only) */}
@@ -503,6 +514,20 @@ const Projects = () => {
               <option value="Upcoming">Upcoming</option>
             </select>
 
+            {/* RENT / PURCHASE */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={filters.transactionType}
+              onChange={(e) =>
+                setFilters({ ...filters, transactionType: e.target.value })
+              }
+            >
+              <option value="">All Type</option>
+              <option value="Rent">Rent</option>
+              <option value="Purchase">Purchase</option>
+              <option value="Rent & Purchase">Rent & Purchase</option>
+            </select>
+
             {/* LOCATION */}
             <input
               type="text"
@@ -574,6 +599,7 @@ const Projects = () => {
                     minPrice: "",
                     maxPrice: "",
                     features: [],
+                    transactionType: "",
                   })
                 }
                 className="px-4 py-2 border rounded"
@@ -686,6 +712,26 @@ const Projects = () => {
                       {project.status || "Completed"}
                     </span>
                   </div>
+                  {/* Rent / Purchase Badge */}
+                  {project.transactionType && (
+                    <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <span
+                        className={`text-xs font-semibold ${
+                          project.transactionType === "Rent"
+                            ? "text-green-400"
+                            : project.transactionType === "Purchase"
+                            ? "text-blue-400"
+                            : "text-purple-400"
+                        }`}
+                      >
+                        {project.transactionType === "Rent" && "🏠 Rent"}
+                        {project.transactionType === "Purchase" &&
+                          "💰 Purchase"}
+                        {project.transactionType === "Rent & Purchase" &&
+                          "🔁 Rent & Buy"}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Project info */}
