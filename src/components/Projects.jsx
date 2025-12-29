@@ -9,17 +9,17 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTenure, setSelectedTenure] = useState(10);
-  const [transactionFilter, setTransactionFilter] = useState("All");
-
+  
   // FILTER STATE
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState({
     status: "",
-    transactionType: "",
     location: "",
     minPrice: "",
     maxPrice: "",
-    features: [],
+    propertyType: "",
+    bedrooms: "",
+    transactionType: ""
   });
 
   // ADD ESTATE STATE
@@ -38,54 +38,68 @@ const Projects = () => {
       teamSize: "",
     },
     photo: null,
+    propertyType: "Residential",
+    bedrooms: "2",
+    transactionType: "Sale"
   });
 
   const [userEstates, setUserEstates] = useState([]);
+  
+  // Book Schedule Feature
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleData, setScheduleData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    date: "",
+    time: "",
+    notes: ""
+  });
+  
+  // Notification State
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "success"
+  });
 
-  // ✅ MOVE FILTER LOGIC HERE (BEFORE useEffect)
+  // Get unique values for filter dropdowns
   const allProjects = [...projectsData, ...userEstates];
+  
+  const uniqueLocations = [...new Set(allProjects.map(p => p.location))];
+  const uniqueStatuses = ["Completed", "In Progress", "Upcoming"];
+  const propertyTypes = ["Residential", "Commercial", "Industrial", "Mixed Use"];
+  const bedroomsOptions = ["1", "2", "3", "4", "5+"];
+  const transactionTypes = ["Sale", "Rent", "Lease"];
 
-  const availableFeatures = Array.from(
-    new Set(allProjects.flatMap((p) => p.features || []))
-  );
-
-  const filteredProjects = allProjects.filter((project) => {
-    const price = Number(String(project.price || "").replace(/[^0-9]/g, ""));
-
-    // STATUS
+  // Filter projects based on selected filters
+  const filteredProjects = allProjects.filter(project => {
+    // Status filter
     if (filters.status && project.status !== filters.status) return false;
-
-    // RENT / PURCHASE ✅ FIX ADDED
-    if (
-      filters.transactionType &&
-      project.transactionType !== filters.transactionType
-    )
-      return false;
-
-    // LOCATION
-    if (
-      filters.location &&
-      !String(project.location || "")
-        .toLowerCase()
-        .includes(filters.location.toLowerCase())
-    )
-      return false;
-
-    // PRICE
-    if (filters.minPrice && price < Number(filters.minPrice)) return false;
-    if (filters.maxPrice && price > Number(filters.maxPrice)) return false;
-
-    // FEATURES
-    if (
-      filters.features.length &&
-      !filters.features.every((f) => (project.features || []).includes(f))
-    )
-      return false;
-
+    
+    // Location filter
+    if (filters.location && !project.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
+    
+    // Price range filter
+    const priceNumber = parseFloat(project.price.replace(/[^0-9.-]+/g, ""));
+    if (filters.minPrice && priceNumber < parseFloat(filters.minPrice)) return false;
+    if (filters.maxPrice && priceNumber > parseFloat(filters.maxPrice)) return false;
+    
+    // Property type filter
+    if (filters.propertyType && project.propertyType !== filters.propertyType) return false;
+    
+    // Bedrooms filter
+    if (filters.bedrooms && project.bedrooms !== filters.bedrooms) return false;
+    
+    // Transaction type filter
+    if (filters.transactionType && project.transactionType !== filters.transactionType) return false;
+    
     return true;
   });
 
-  // RESPONSIVE CARDS
+  // Count active filters
+  const activeFilterCount = Object.values(filters).filter(value => value !== "").length;
+
   useEffect(() => {
     const updateCardsToShow = () => {
       if (window.innerWidth >= 1024) {
@@ -101,49 +115,56 @@ const Projects = () => {
     return () => window.removeEventListener("resize", updateCardsToShow);
   }, []);
 
-  // AUTO SLIDE (NOW SAFE)
+  // Auto slide when not in "View All" mode
   useEffect(() => {
     if (!isViewAll && cardsToShow === 1 && !selectedProject) {
       const interval = setInterval(() => {
-        setCurrentIndex((prevIndex) =>
-          filteredProjects.length
-            ? (prevIndex + 1) % filteredProjects.length
-            : 0
-        );
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredProjects.length);
       }, 4000);
-
       return () => clearInterval(interval);
     }
   }, [isViewAll, cardsToShow, filteredProjects.length, selectedProject]);
+
+  // Auto-hide notification after 5 seconds
+  useEffect(() => {
+    if (notification.show) {
+      const timer = setTimeout(() => {
+        setNotification({ show: false, message: "", type: "success" });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification.show]);
 
   const handleViewAll = () => {
     setIsViewAll(true);
     setCardsToShow(projectsData.length);
     setCurrentIndex(0);
   };
+
   const prevSlide = () => {
     setCurrentIndex((prev) =>
-      filteredProjects.length
-        ? (prev - 1 + filteredProjects.length) % filteredProjects.length
-        : 0
+      (prev - 1 + filteredProjects.length) % filteredProjects.length
     );
   };
 
   const nextSlide = () => {
     setCurrentIndex((prev) =>
-      filteredProjects.length ? (prev + 1) % filteredProjects.length : 0
+      (prev + 1) % filteredProjects.length
     );
   };
 
   const openProjectDetails = (project) => {
     setSelectedProject(project);
-    document.body.style.overflow = "hidden"; // Prevent background scrolling
+    document.body.style.overflow = "hidden";
   };
 
   const closeProjectDetails = () => {
     setSelectedProject(null);
-    document.body.style.overflow = "auto"; // Restore scrolling
+    setShowSchedule(false);
+    setShowPayment(false);
+    document.body.style.overflow = "auto";
   };
+
   const handleAddEstate = () => {
     if (
       !newEstate.title ||
@@ -152,13 +173,14 @@ const Projects = () => {
       !newEstate.description ||
       !newEstate.photo
     ) {
-      alert("Please fill all required fields and upload a photo.");
+      showNotification("Please fill all required fields and upload a photo.", "error");
       return;
     }
 
     const photoURL = URL.createObjectURL(newEstate.photo);
     const basePrice = Number(newEstate.price);
     const finalPrice = basePrice + basePrice * 0.15;
+    
     const estateCard = {
       id: Date.now(),
       title: newEstate.title,
@@ -168,21 +190,25 @@ const Projects = () => {
       image: photoURL,
       status: newEstate.status,
       description: newEstate.description,
-      features: newEstate.features.filter((f) => f.trim() !== ""),
+      features: newEstate.features.filter(f => f.trim() !== ""),
       timeline: {
         duration: newEstate.timeline.duration,
         area: newEstate.timeline.area,
         completionDate: newEstate.timeline.completionDate,
         teamSize: newEstate.timeline.teamSize,
       },
-      isUserListed: true,
+      propertyType: newEstate.propertyType,
+      bedrooms: newEstate.bedrooms,
+      transactionType: newEstate.transactionType,
+      isUserListed: true
     };
 
-    setUserEstates((prev) => [...prev, estateCard]);
-
+    setUserEstates(prev => [...prev, estateCard]);
     setShowAddEstate(false);
+    
+    showNotification("Your estate has been listed successfully!", "success");
 
-    // reset form
+    // Reset form
     setNewEstate({
       title: "",
       price: "",
@@ -197,10 +223,119 @@ const Projects = () => {
         teamSize: "",
       },
       photo: null,
+      propertyType: "Residential",
+      bedrooms: "2",
+      transactionType: "Sale"
     });
   };
+
   const handleDeleteEstate = (id) => {
-    setUserEstates((prev) => prev.filter((e) => e.id !== id));
+    setUserEstates(prev => prev.filter(e => e.id !== id));
+    showNotification("Estate has been removed successfully!", "info");
+  };
+
+  const handleScheduleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!scheduleData.name || !scheduleData.email || !scheduleData.phone || !scheduleData.date || !scheduleData.time) {
+      showNotification("Please fill all required fields.", "error");
+      return;
+    }
+
+    // Here you would typically send the data to your backend
+    console.log("Schedule Booking:", {
+      project: selectedProject?.title,
+      ...scheduleData
+    });
+
+    // Show success notification
+    showNotification(
+      `Schedule booked successfully! Our team will contact you at ${scheduleData.phone} to confirm.`,
+      "success"
+    );
+
+    // Reset form and close modal
+    setScheduleData({
+      name: "",
+      email: "",
+      phone: "",
+      date: "",
+      time: "",
+      notes: ""
+    });
+    setShowSchedule(false);
+  };
+
+  const showNotification = (message, type) => {
+    setNotification({
+      show: true,
+      message,
+      type
+    });
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      status: "",
+      location: "",
+      minPrice: "",
+      maxPrice: "",
+      propertyType: "",
+      bedrooms: "",
+      transactionType: ""
+    });
+  };
+
+  // Helper function to get features array with fallback
+  const getFeatures = (project) => {
+    if (project.features && Array.isArray(project.features)) {
+      return project.features;
+    }
+    // Fallback features if none provided
+    return [
+      'Modern Architecture',
+      'Sustainable Materials',
+      'Smart Home Integration',
+      'Landscaped Gardens',
+      'Energy Efficient',
+      'Premium Finishes'
+    ];
+  };
+
+  // Helper function to get timeline object with fallback
+  const getTimeline = (project) => {
+    if (project.timeline) {
+      return project.timeline;
+    }
+    // Fallback timeline
+    return {
+      duration: "12 Months",
+      area: "5,000 Sq. Ft.",
+      completed: "2023",
+      teamSize: "50+ Members"
+    };
+  };
+
+  // Helper function to get description with fallback
+  const getDescription = (project) => {
+    if (project.description) {
+      return project.description;
+    }
+    return `This ${project.title} project showcases exceptional craftsmanship and attention to detail. Located in ${project.location}, this project represents our commitment to quality and innovation in construction and design.`;
+  };
+
+  // Helper function to get specifications with fallback
+  const getSpecifications = (project) => {
+    if (project.specifications) {
+      return project.specifications;
+    }
+    // Fallback specifications
+    return {
+      type: "Residential Project",
+      floors: "Not specified",
+      units: "Not specified",
+      parking: "Available"
+    };
   };
 
   return (
@@ -212,74 +347,189 @@ const Projects = () => {
       className="container mx-auto py-4 pt-20 px-6 md:px-20 lg:px-32 my-20 w-full overflow-hidden"
       id="Projects"
     >
-      {/* Centered Header */}
+      {/* Notification Popup - Fixed at top */}
+      <AnimatePresence>
+        {notification.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            className={`fixed top-0 left-0 right-0 z-[100] rounded-b-lg shadow-xl p-4 text-white ${
+              notification.type === "success" ? "bg-green-500" :
+              notification.type === "error" ? "bg-red-500" :
+              "bg-blue-500"
+            }`}
+          >
+            <div className="container mx-auto flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  {notification.type === "success" ? (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : notification.type === "error" ? (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="font-medium">{notification.message}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setNotification({ show: false, message: "", type: "success" })}
+                className="ml-4 flex-shrink-0 text-white/80 hover:text-white"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Header with Filter and Add Estate Buttons */}
       <div className="mb-12 relative">
-        {/* Centered Title and Description */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          {/* LEFT — Buttons */}
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+          {/* Left - Filter and Add Estate Buttons */}
           <div className="flex gap-3">
             <button
               onClick={() => setShowFilter(true)}
-              className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg bg-white hover:bg-gray-100 transition"
+              className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg bg-white hover:bg-gray-100 transition flex items-center gap-2"
             >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
               Filter
+              {activeFilterCount > 0 && (
+                <span className="bg-blue-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
 
             <button
               onClick={() => setShowAddEstate(true)}
-              className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
+              className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition flex items-center gap-2"
             >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
               Add Your Estate
             </button>
           </div>
 
-          {/* RIGHT — Title */}
-          <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-4xl font-bold text-center">
-            Projects{" "}
+          {/* Center - Title */}
+          <h1 className="text-2xl sm:text-4xl font-bold text-center">
+            Properties{" "}
             <span className="underline underline-offset-4 decoration-1 font-light">
-              Completed
+              For You
             </span>
           </h1>
+
+          {/* Right - View All Button (desktop only) */}
+          {!isViewAll && (
+            <div className="hidden sm:block">
+              <motion.button
+                onClick={handleViewAll}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 group"
+              >
+                <span>View All Projects</span>
+                <svg
+                  className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300"
+                  fill="none"
+                  stroke="white"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"
+                  ></path>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 13h6m-3-3v6"
+                  ></path>
+                </svg>
+              </motion.button>
+            </div>
+          )}
         </div>
 
-        {/* View All Button - Right aligned (desktop only) */}
-        {!isViewAll && (
-          <div className="absolute right-0 top-0 hidden sm:block">
-            <motion.button
-              onClick={handleViewAll}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 group"
-            >
-              <span>View All Projects</span>
-              <svg
-                className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300"
-                fill="none"
-                stroke="white"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"
-                ></path>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 13h6m-3-3v6"
-                ></path>
-              </svg>
-            </motion.button>
-          </div>
-        )}
+        <p className="text-gray-500 max-w-xl mx-auto mb-8 text-center">
+          Find Your Dream Property - Browse Our Portfolio
+        </p>
       </div>
 
-      {/* Mobile View All Button - Centered below header */}
+      {/* Active Filters Display */}
+      {activeFilterCount > 0 && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-blue-700">Active Filters:</span>
+              {filters.status && (
+                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                  <span className="font-medium">Status:</span> {filters.status}
+                </span>
+              )}
+              {filters.location && (
+                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                  <span className="font-medium">Location:</span> {filters.location}
+                </span>
+              )}
+              {filters.propertyType && (
+                <span className="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                  <span className="font-medium">Type:</span> {filters.propertyType}
+                </span>
+              )}
+              {filters.bedrooms && (
+                <span className="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                  <span className="font-medium">Bedrooms:</span> {filters.bedrooms}
+                </span>
+              )}
+              {filters.transactionType && (
+                <span className="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                  <span className="font-medium">Transaction:</span> {filters.transactionType}
+                </span>
+              )}
+              {(filters.minPrice || filters.maxPrice) && (
+                <span className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                  <span className="font-medium">Price:</span> 
+                  {filters.minPrice && ` ₹${filters.minPrice}`}
+                  {filters.minPrice && filters.maxPrice && " - "}
+                  {filters.maxPrice && ` ₹${filters.maxPrice}`}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={clearFilters}
+              className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Clear All
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile View All Button */}
       {!isViewAll && (
         <div className="flex justify-center mb-8 sm:hidden">
           <motion.button
@@ -312,329 +562,360 @@ const Projects = () => {
           </motion.button>
         </div>
       )}
-      {showAddEstate && (
+
+      {/* Filter Modal */}
+      {showFilter && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6">Add Your Estate</h2>
+            <h2 className="text-xl font-bold mb-6 text-gray-800 border-b pb-3">Filter Properties</h2>
+            
+            <div className="space-y-5">
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Status</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {uniqueStatuses.map(status => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setFilters(prev => ({
+                        ...prev,
+                        status: prev.status === status ? "" : status
+                      }))}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filters.status === status
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-<div className="space-y-6">
+              {/* Transaction Type */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Transaction Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {transactionTypes.map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setFilters(prev => ({
+                        ...prev,
+                        transactionType: prev.transactionType === type ? "" : type
+                      }))}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filters.transactionType === type
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-  {/* BASIC INFO */}
-  <div className="space-y-3">
-    <h3 className="font-semibold text-gray-700">Basic Information</h3>
+              {/* Property Type */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Property Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {propertyTypes.map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setFilters(prev => ({
+                        ...prev,
+                        propertyType: prev.propertyType === type ? "" : type
+                      }))}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filters.propertyType === type
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <input
-        type="text"
-        placeholder="Property Title"
-        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-        value={newEstate.title}
-        onChange={(e) => setNewEstate({ ...newEstate, title: e.target.value })}
-      />
+              {/* Location Filter */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Location</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search location..."
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={filters.location}
+                    onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                  />
+                  <svg className="absolute right-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
 
-      <input
-        type="number"
-        placeholder="Listing Price (₹)"
-        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-        value={newEstate.price}
-        onChange={(e) => setNewEstate({ ...newEstate, price: e.target.value })}
-      />
-    </div>
+              {/* Price Range */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Price Range (₹)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Min Price"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={filters.minPrice}
+                      onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      placeholder="Max Price"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={filters.maxPrice}
+                      onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
 
-    <input
-      type="text"
-      placeholder="Location"
-      className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 outline-none"
-      value={newEstate.location}
-      onChange={(e) =>
-        setNewEstate({ ...newEstate, location: e.target.value })
-      }
-    />
+              {/* Bedrooms Filter */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">Bedrooms</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {bedroomsOptions.map(beds => (
+                    <button
+                      key={beds}
+                      type="button"
+                      onClick={() => setFilters(prev => ({
+                        ...prev,
+                        bedrooms: prev.bedrooms === beds ? "" : beds
+                      }))}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filters.bedrooms === beds
+                          ? "bg-yellow-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {beds}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-    <select
-      className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 outline-none"
-      value={newEstate.status}
-      onChange={(e) =>
-        setNewEstate({ ...newEstate, status: e.target.value })
-      }
-    >
-      <option value="Completed">Completed</option>
-      <option value="In Progress">In Progress</option>
-      <option value="Upcoming">Upcoming</option>
-    </select>
-
-    <textarea
-      placeholder="Short description about the property"
-      rows={3}
-      className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 outline-none"
-      value={newEstate.description}
-      onChange={(e) =>
-        setNewEstate({ ...newEstate, description: e.target.value })
-      }
-    />
-  </div>
-
-  {/* FEATURES */}
-  <div className="space-y-3">
-    <h3 className="font-semibold text-gray-700">Key Features</h3>
-
-    {newEstate.features.map((f, i) => (
-      <input
-        key={i}
-        type="text"
-        placeholder={`Feature ${i + 1}`}
-        className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 outline-none"
-        value={f}
-        onChange={(e) => {
-          const copy = [...newEstate.features];
-          copy[i] = e.target.value;
-          setNewEstate({ ...newEstate, features: copy });
-        }}
-      />
-    ))}
-
-    <button
-      className="text-blue-600 text-sm"
-      onClick={() =>
-        setNewEstate({ ...newEstate, features: [...newEstate.features, ""] })
-      }
-    >
-      + Add another feature
-    </button>
-  </div>
-
-  {/* TIMELINE */}
-  <div className="space-y-3">
-    <h3 className="font-semibold text-gray-700">Project Details</h3>
-
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <input
-        type="text"
-        placeholder="Duration (e.g., 14 Months)"
-        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-        value={newEstate.timeline.duration}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, duration: e.target.value },
-          })
-        }
-      />
-
-      <input
-        type="text"
-        placeholder="Area (e.g., 4200 Sq.Ft.)"
-        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-        value={newEstate.timeline.area}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, area: e.target.value },
-          })
-        }
-      />
-
-      <input
-        type="date"
-        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-        value={newEstate.timeline.completionDate}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: {
-              ...newEstate.timeline,
-              completionDate: e.target.value,
-            },
-          })
-        }
-      />
-
-      <input
-        type="number"
-        placeholder="Team Size"
-        className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
-        value={newEstate.timeline.teamSize}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, teamSize: e.target.value },
-          })
-        }
-      />
-    </div>
-  </div>
-
-  {/* PHOTO UPLOAD */}
-  <div className="space-y-2">
-    <h3 className="font-semibold text-gray-700">Property Image</h3>
-
-    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-5 cursor-pointer hover:bg-gray-50 transition">
-      <span className="text-gray-500">
-        {newEstate.photo ? "Change Image" : "Click to upload image"}
-      </span>
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) =>
-          setNewEstate({ ...newEstate, photo: e.target.files[0] })
-        }
-      />
-    </label>
-
-    {newEstate.photo && (
-      <img
-        src={URL.createObjectURL(newEstate.photo)}
-        className="mt-3 rounded-lg shadow h-36 w-full object-cover"
-        alt="preview"
-      />
-    )}
-
-    <p className="text-xs text-gray-500">
-      Recommended: JPG / PNG — up to 5 MB
-    </p>
-  </div>
-</div>
-
-
-
-            {/* Buttons */}
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
               <button
-                onClick={() => setShowAddEstate(false)}
-                className="px-4 py-2 border rounded cursor-pointer"
+                onClick={clearFilters}
+                className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors duration-300"
               >
-                Cancel
+                Reset All
               </button>
-
-              <button
-                onClick={handleAddEstate}
-                className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer"
-              >
-                Submit
-              </button>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowFilter(false)}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors duration-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowFilter(false);
+                    showNotification("Filters applied successfully!", "success");
+                  }}
+                  className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-300"
+                >
+                  Apply Filters
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {showFilter && (
+      {/* Add Estate Modal */}
+      {showAddEstate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Filter Projects</h2>
+            <h2 className="text-xl font-bold mb-4">Add Your Estate</h2>
 
-            {/* STATUS */}
+            {/* Title */}
+            <input
+              type="text"
+              placeholder="Property Title"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.title}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, title: e.target.value })
+              }
+            />
+
+            {/* Price */}
+            <input
+              type="number"
+              placeholder="Price (₹)"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.price}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, price: e.target.value })
+              }
+            />
+
+            {/* Location */}
+            <input
+              type="text"
+              placeholder="Location"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.location}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, location: e.target.value })
+              }
+            />
+
+            {/* Status */}
             <select
               className="w-full border p-2 rounded mb-3"
-              value={filters.status}
+              value={newEstate.status}
               onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
+                setNewEstate({ ...newEstate, status: e.target.value })
               }
             >
-              <option value="">All Status</option>
               <option value="Completed">Completed</option>
               <option value="In Progress">In Progress</option>
               <option value="Upcoming">Upcoming</option>
             </select>
 
-            {/* RENT / PURCHASE */}
-            <select
+            {/* Description */}
+            <textarea
+              placeholder="Description"
               className="w-full border p-2 rounded mb-3"
-              value={filters.transactionType}
+              rows="3"
+              value={newEstate.description}
               onChange={(e) =>
-                setFilters({ ...filters, transactionType: e.target.value })
-              }
-            >
-              <option value="">All Type</option>
-              <option value="Rent">Rent</option>
-              <option value="Purchase">Purchase</option>
-              <option value="Rent & Purchase">Rent & Purchase</option>
-            </select>
-
-            {/* LOCATION */}
-            <input
-              type="text"
-              placeholder="Location"
-              className="w-full border p-2 rounded mb-3"
-              value={filters.location}
-              onChange={(e) =>
-                setFilters({ ...filters, location: e.target.value })
+                setNewEstate({ ...newEstate, description: e.target.value })
               }
             />
 
-            {/* PRICE RANGE */}
-            <div className="flex gap-3 mb-3">
-              <input
-                type="number"
-                placeholder="Min ₹"
-                className="w-full border p-2 rounded"
-                value={filters.minPrice}
-                onChange={(e) =>
-                  setFilters({ ...filters, minPrice: e.target.value })
-                }
-              />
-              <input
-                type="number"
-                placeholder="Max ₹"
-                className="w-full border p-2 rounded"
-                value={filters.maxPrice}
-                onChange={(e) =>
-                  setFilters({ ...filters, maxPrice: e.target.value })
-                }
-              />
-            </div>
-
             {/* FEATURES */}
-            <label className="font-semibold mb-2 block">Features</label>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {availableFeatures.length === 0 ? (
-                <p className="text-sm text-gray-500 col-span-2">
-                  No features available to filter.
-                </p>
-              ) : (
-                availableFeatures.map((feature, i) => (
-                  <label key={i} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={filters.features.includes(feature)}
-                      onChange={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          features: prev.features.includes(feature)
-                            ? prev.features.filter((f) => f !== feature)
-                            : [...prev.features, feature],
-                        }))
-                      }
-                    />
-                    {feature}
-                  </label>
-                ))
-              )}
-            </div>
+            <label className="font-semibold">Features</label>
 
-            {/* BUTTONS */}
+            {newEstate.features.map((feature, i) => (
+              <input
+                key={i}
+                type="text"
+                className="w-full border p-2 rounded mb-2"
+                placeholder={`Feature ${i + 1}`}
+                value={feature}
+                onChange={(e) => {
+                  const copy = [...newEstate.features];
+                  copy[i] = e.target.value;
+                  setNewEstate({ ...newEstate, features: copy });
+                }}
+              />
+            ))}
+
+            <button
+              className="text-blue-600 text-sm mb-3"
+              onClick={() =>
+                setNewEstate({
+                  ...newEstate,
+                  features: [...newEstate.features, ""],
+                })
+              }
+            >
+              + Add Feature
+            </button>
+
+            {/* TIMELINE */}
+            <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
+
+            <input
+              type="number"
+              placeholder="Duration (e.g., 14 Months)"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.duration}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: { ...newEstate.timeline, duration: e.target.value },
+                })
+              }
+            />
+
+            <input
+              type="number"
+              placeholder="Area (e.g., 4200 Sq. Ft.)"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.area}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: { ...newEstate.timeline, area: e.target.value },
+                })
+              }
+            />
+
+            <input
+              type="date"
+              placeholder="Completion Date"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.completionDate}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: {
+                    ...newEstate.timeline,
+                    completionDate: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <input
+              type="number"
+              placeholder="Team Size"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.timeline.teamSize}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: {
+                    ...newEstate.timeline,
+                    teamSize: e.target.value,
+                  },
+                })
+              }
+            />
+
+            {/* IMAGE */}
+            <input
+              type="file"
+              accept="image/*"
+              className="mb-4"
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, photo: e.target.files[0] })
+              }
+            />
+
+            {/* Buttons */}
             <div className="flex justify-end gap-3">
               <button
-                onClick={() =>
-                  setFilters({
-                    status: "",
-                    location: "",
-                    minPrice: "",
-                    maxPrice: "",
-                    features: [],
-                    transactionType: "",
-                  })
-                }
+                onClick={() => setShowAddEstate(false)}
                 className="px-4 py-2 border rounded"
               >
-                Clear
+                Cancel
               </button>
-
               <button
-                onClick={() => setShowFilter(false)}
+                onClick={handleAddEstate}
                 className="px-4 py-2 bg-blue-600 text-white rounded"
               >
-                Apply
+                Submit
               </button>
             </div>
           </div>
@@ -644,25 +925,14 @@ const Projects = () => {
       {/* Project display container */}
       <div className="overflow-hidden relative">
         {/* LEFT / RIGHT ARROWS (only in slider mode) */}
-        {!isViewAll && (
+        {!isViewAll && filteredProjects.length > 0 && (
           <>
             <button
               onClick={prevSlide}
               className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 19l-7-7 7-7"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
@@ -670,22 +940,36 @@ const Projects = () => {
               onClick={nextSlide}
               className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </>
+        )}
+
+        {/* No Results Message */}
+        {filteredProjects.length === 0 && (
+          <div className="text-center py-16 bg-gray-50 rounded-xl">
+            <svg className="w-20 h-20 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No properties found</h3>
+            <p className="text-gray-600 mb-6">Try adjusting your filters or adding a new property</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={clearFilters}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Clear Filters
+              </button>
+              <button
+                onClick={() => setShowAddEstate(true)}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Add Property
+              </button>
+            </div>
+          </div>
         )}
 
         <div
@@ -708,12 +992,12 @@ const Projects = () => {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className={isViewAll ? "" : "flex-shrink-0 w-full sm:w-1/4"}
             >
-              <div className="relative group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <div className="relative group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white">
                 {/* Project image */}
                 {project.isUserListed && (
                   <button
                     onClick={() => handleDeleteEstate(project.id)}
-                    className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700 transition"
+                    className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700 transition z-10"
                   >
                     Delete
                   </button>
@@ -725,44 +1009,41 @@ const Projects = () => {
                     alt={project.title}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
-
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-
+                  
+                  {/* Property Type Badge */}
+                  {project.propertyType && (
+                    <div className="absolute top-4 left-4 bg-purple-600 text-white text-xs px-3 py-1 rounded-full">
+                      {project.propertyType}
+                    </div>
+                  )}
+                  
                   {/* Status badge */}
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <span className="text-sm font-semibold text-blue-600">
+                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <span className={`text-sm font-semibold ${
+                      project.status === "Completed" ? "text-green-600" :
+                      project.status === "In Progress" ? "text-yellow-600" :
+                      "text-blue-600"
+                    }`}>
                       {project.status || "Completed"}
                     </span>
                   </div>
-                  {/* Rent / Purchase Badge */}
+
+                  {/* Transaction Type Badge */}
                   {project.transactionType && (
-                    <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-sm px-3 py-1 rounded-full">
-                      <span
-                        className={`text-xs font-semibold ${
-                          project.transactionType === "Rent"
-                            ? "text-green-400"
-                            : project.transactionType === "Purchase"
-                            ? "text-blue-400"
-                            : "text-purple-400"
-                        }`}
-                      >
-                        {project.transactionType === "Rent" && "🏠 Rent"}
-                        {project.transactionType === "Purchase" &&
-                          "💰 Purchase"}
-                        {project.transactionType === "Rent & Purchase" &&
-                          "🔁 Rent & Buy"}
-                      </span>
+                    <div className="absolute bottom-4 left-4 bg-black/80 text-white text-xs px-3 py-1 rounded-full">
+                      {project.transactionType === "Sale" && "💰 For Sale"}
+                      {project.transactionType === "Rent" && "🏠 For Rent"}
+                      {project.transactionType === "Lease" && "📜 For Lease"}
                     </div>
                   )}
                 </div>
 
                 {/* Project info */}
-                <div className="bg-white p-5">
+                <div className="p-5">
                   <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
                     {project.title}
                   </h3>
-
                   <div className="flex items-center text-gray-600 mb-3">
                     <svg
                       className="w-4 h-4 mr-2 text-gray-400"
@@ -779,6 +1060,26 @@ const Projects = () => {
                     <span className="text-sm">{project.location}</span>
                   </div>
 
+                  {/* Property Details */}
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                    {project.bedrooms && (
+                      <span className="flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        {project.bedrooms} Beds
+                      </span>
+                    )}
+                    {project.timeline?.area && (
+                      <span className="flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                        </svg>
+                        {project.timeline.area}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div>
                       <p className="text-lg font-bold text-blue-600">
@@ -790,7 +1091,6 @@ const Projects = () => {
                         </p>
                       )}
                     </div>
-
                     <button
                       onClick={() => openProjectDetails(project)}
                       className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors duration-300 group"
@@ -813,16 +1113,14 @@ const Projects = () => {
                     </button>
                   </div>
                 </div>
-
-                {/* Decorative bottom border on hover */}
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Dots indicator (only in slider mode) */}
-        {!isViewAll && cardsToShow === 1 && (
+        {/* Dots indicator */}
+        {!isViewAll && cardsToShow === 1 && filteredProjects.length > 1 && (
           <div className="flex justify-center mt-10 space-x-2">
             {filteredProjects.map((_, index) => (
               <button
@@ -839,7 +1137,7 @@ const Projects = () => {
           </div>
         )}
 
-        {/* Back to Slider Button (only shown in View All mode on mobile) */}
+        {/* Back to Slider Button */}
         {isViewAll && (
           <div className="flex justify-center mt-10">
             <motion.button
@@ -870,7 +1168,7 @@ const Projects = () => {
         )}
       </div>
 
-      {/* Project Details Modal */}
+      {/* PROJECT DETAILS MODAL - FULL CODE RESTORED */}
       <AnimatePresence>
         {selectedProject && (
           <>
@@ -1002,8 +1300,7 @@ const Projects = () => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-500 mt-3">
-                        Interactive map showing the project location. You can
-                        zoom and pan to explore the area.
+                        Interactive map showing the project location.
                       </p>
                     </div>
                   </div>
@@ -1012,7 +1309,7 @@ const Projects = () => {
                   <div>
                     {/* Project Status & Price */}
                     <div className="flex justify-between items-center mb-8 p-4 bg-gradient-to-r from-blue-50 to-white rounded-xl">
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-4">
                         <div
                           className={`px-4 py-2 rounded-full ${
                             selectedProject.status === "Completed"
@@ -1026,6 +1323,13 @@ const Projects = () => {
                             {selectedProject.status || "Completed"}
                           </span>
                         </div>
+                        {selectedProject.propertyType && (
+                          <div className="px-4 py-2 rounded-full bg-purple-100 text-purple-800">
+                            <span className="font-semibold">
+                              {selectedProject.propertyType}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-500">Project Value</p>
@@ -1055,7 +1359,7 @@ const Projects = () => {
                         Project Overview
                       </h3>
                       <p className="text-gray-600 leading-relaxed">
-                        {selectedProject.description}
+                        {getDescription(selectedProject)}
                       </p>
                     </div>
 
@@ -1079,27 +1383,26 @@ const Projects = () => {
                         Key Features
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {selectedProject.features &&
-                          selectedProject.features.map((feature, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center p-3 bg-gray-50 rounded-lg"
+                        {getFeatures(selectedProject).map((feature, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center p-3 bg-gray-50 rounded-lg"
+                          >
+                            <svg
+                              className="w-4 h-4 mr-3 text-blue-600"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                              xmlns="http://www.w3.org/2000/svg"
                             >
-                              <svg
-                                className="w-4 h-4 mr-3 text-blue-600"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                ></path>
-                              </svg>
-                              <span className="text-gray-700">{feature}</span>
-                            </div>
-                          ))}
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              ></path>
+                            </svg>
+                            <span className="text-gray-700">{feature}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -1109,85 +1412,77 @@ const Projects = () => {
                         Project Details
                       </h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {selectedProject.timeline && (
-                          <>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">
-                                {selectedProject.timeline.duration}
+                        {(() => {
+                          const timeline = getTimeline(selectedProject);
+                          return (
+                            <>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  {timeline.duration}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  Duration
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-500">
-                                Duration
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  {timeline.area}
+                                </div>
+                                <div className="text-sm text-gray-500">Area</div>
                               </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">
-                                {selectedProject.timeline.area}
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  {timeline.completed || timeline.completionDate || timeline.startDate || 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {timeline.completed ? 'Completed' : 
+                                   timeline.completionDate ? 'Completion' : 
+                                   timeline.startDate ? 'Start Date' : 'Date'}
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-500">Area</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">
-                                {selectedProject.timeline.completed ||
-                                  selectedProject.timeline.completionDate ||
-                                  selectedProject.timeline.startDate}
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  {timeline.teamSize}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  Team Size
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-500">
-                                {selectedProject.timeline.completed
-                                  ? "Completed"
-                                  : selectedProject.timeline.completionDate
-                                  ? "Completion"
-                                  : "Start Date"}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">
-                                {selectedProject.timeline.teamSize}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                Team Size
-                              </div>
-                            </div>
-                          </>
-                        )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
 
                     {/* Specifications */}
-                    {selectedProject.specifications && (
-                      <div className="mb-6">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4">
-                          Specifications
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="text-sm text-gray-500">
-                              Project Type
-                            </div>
-                            <div className="font-semibold">
-                              {selectedProject.specifications.type}
-                            </div>
-                          </div>
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="text-sm text-gray-500">Floors</div>
-                            <div className="font-semibold">
-                              {selectedProject.specifications.floors}
-                            </div>
-                          </div>
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="text-sm text-gray-500">Units</div>
-                            <div className="font-semibold">
-                              {selectedProject.specifications.units}
-                            </div>
-                          </div>
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="text-sm text-gray-500">Parking</div>
-                            <div className="font-semibold">
-                              {selectedProject.specifications.parking}
-                            </div>
-                          </div>
-                        </div>
+                    <div className="mb-6">
+                      <h3 className="text-xl font-bold text-gray-800 mb-4">Specifications</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        {(() => {
+                          const specs = getSpecifications(selectedProject);
+                          return (
+                            <>
+                              <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="text-sm text-gray-500">Project Type</div>
+                                <div className="font-semibold">{specs.type}</div>
+                              </div>
+                              <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="text-sm text-gray-500">Floors</div>
+                                <div className="font-semibold">{specs.floors}</div>
+                              </div>
+                              <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="text-sm text-gray-500">Units</div>
+                                <div className="font-semibold">{specs.units}</div>
+                              </div>
+                              <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="text-sm text-gray-500">Parking</div>
+                                <div className="font-semibold">{specs.parking}</div>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1204,7 +1499,29 @@ const Projects = () => {
 
                   {/* RIGHT SIDE BUTTONS */}
                   <div className="flex items-center gap-3">
-                    {/* ✅ PAYMENT BUTTON (ADDED) */}
+                    {/* BOOK SCHEDULE BUTTON */}
+                    <button
+                      onClick={() => setShowSchedule(true)}
+                      className="cursor-pointer px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-medium rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-300 flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Book a Schedule
+                    </button>
+
+                    {/* PAYMENT BUTTON */}
                     <button
                       onClick={() => setShowPayment(true)}
                       className="cursor-pointer px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-300"
@@ -1212,7 +1529,7 @@ const Projects = () => {
                       Payment
                     </button>
 
-                    {/* EXISTING DOWNLOAD BUTTON */}
+                    {/* DOWNLOAD BUTTON */}
                     <button className="cursor-pointer px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 flex items-center gap-2">
                       <svg
                         className="w-5 h-5"
@@ -1236,10 +1553,130 @@ const Projects = () => {
             </motion.div>
           </>
         )}
+      </AnimatePresence>
 
+      {/* Schedule Booking Modal */}
+      <AnimatePresence>
+        {showSchedule && selectedProject && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSchedule(false)}
+              className="fixed inset-0 bg-black/50 z-[60]"
+            />
+
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 20 }}
+              className="fixed inset-0 flex items-center justify-center z-[61]"
+            >
+              <div className="bg-white rounded-xl w-[400px] p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Book Site Visit Schedule
+                  </h3>
+                  <button
+                    onClick={() => setShowSchedule(false)}
+                    className="text-gray-500 hover:text-red-600 transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-4">
+                  Schedule a visit for <strong>{selectedProject.title}</strong>
+                </p>
+
+                <form onSubmit={handleScheduleSubmit}>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Full Name *"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      value={scheduleData.name}
+                      onChange={(e) =>
+                        setScheduleData({ ...scheduleData, name: e.target.value })
+                      }
+                      required
+                    />
+
+                    <input
+                      type="email"
+                      placeholder="Email Address *"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      value={scheduleData.email}
+                      onChange={(e) =>
+                        setScheduleData({ ...scheduleData, email: e.target.value })
+                      }
+                      required
+                    />
+
+                    <input
+                      type="tel"
+                      placeholder="Phone Number *"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      value={scheduleData.phone}
+                      onChange={(e) =>
+                        setScheduleData({ ...scheduleData, phone: e.target.value })
+                      }
+                      required
+                    />
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        className="w-full p-2 border border-gray-300 rounded"
+                        value={scheduleData.date}
+                        onChange={(e) =>
+                          setScheduleData({ ...scheduleData, date: e.target.value })
+                        }
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                      />
+
+                      <input
+                        type="time"
+                        className="w-full p-2 border border-gray-300 rounded"
+                        value={scheduleData.time}
+                        onChange={(e) =>
+                          setScheduleData({ ...scheduleData, time: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+
+                    <textarea
+                      placeholder="Additional Notes (optional)"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      rows="3"
+                      value={scheduleData.notes}
+                      onChange={(e) =>
+                        setScheduleData({ ...scheduleData, notes: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full mt-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-300"
+                  >
+                    Confirm Booking
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Modal */}
+      <AnimatePresence>
         {showPayment && selectedProject && (
           <>
-            {/* Payment Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1248,7 +1685,6 @@ const Projects = () => {
               className="fixed inset-0 bg-black/50 z-[60]"
             />
 
-            {/* Payment Modal */}
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1257,7 +1693,6 @@ const Projects = () => {
               className="fixed inset-0 flex items-center justify-center z-[61]"
             >
               <div className="bg-white rounded-xl w-[360px] p-6 shadow-2xl">
-                {/* Header */}
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-bold text-gray-800">
                     Payment Details
@@ -1276,7 +1711,7 @@ const Projects = () => {
                   );
                   const downPayment = price * 0.3;
                   const loanAmount = price - downPayment;
-                  const interestRate = 0.08 / 12; // 8% annual
+                  const interestRate = 0.08 / 12;
                   const months = selectedTenure * 12;
 
                   const emi =
@@ -1287,7 +1722,6 @@ const Projects = () => {
 
                   return (
                     <>
-                      {/* Price Info */}
                       <div className="space-y-2 text-sm mb-4">
                         <div className="flex justify-between">
                           <span>Total Price</span>
@@ -1309,7 +1743,6 @@ const Projects = () => {
                         </div>
                       </div>
 
-                      {/* EMI Tenure */}
                       <div className="mb-4">
                         <p className="text-sm font-medium mb-2">
                           Choose EMI Tenure
@@ -1331,7 +1764,6 @@ const Projects = () => {
                         </div>
                       </div>
 
-                      {/* EMI Amount */}
                       <div className="bg-gray-50 p-3 rounded-lg text-center mb-4">
                         <p className="text-sm text-gray-600">Monthly EMI</p>
                         <p className="text-xl font-bold text-blue-600">
@@ -1339,8 +1771,13 @@ const Projects = () => {
                         </p>
                       </div>
 
-                      {/* Pay Button */}
-                      <button className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                      <button 
+                        onClick={() => {
+                          setShowPayment(false);
+                          showNotification("Payment initiated successfully! Our team will contact you shortly.", "success");
+                        }}
+                        className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      >
                         Proceed to Pay
                       </button>
                     </>
