@@ -29,6 +29,8 @@ export const assets = {
     project_img_2,
     project_img_3,
     project_img_4,
+     project_img_5,   // ✅ ADDED
+    project_img_6,
     left_arrow,
     right_arrow,
 }
@@ -36,6 +38,7 @@ export const assets = {
 export const projectsData = [
     {
         title: "Skyline Haven",
+        transactionType: "Purchase",
         price: "₹12,50,000",
         location: "Mumbai, India",
         image: project_img_1,
@@ -66,6 +69,7 @@ export const projectsData = [
     },
     {
         title: "Vista Verde",
+        transactionType: "Rent",
         price: "₹13,20,000",
         location: "Delhi, India",
         image: project_img_2,
@@ -96,6 +100,7 @@ export const projectsData = [
     },
     {
         title: "Serenity Suites",
+        transactionType: "Purchase",
         price: "₹11,50,000",
         location: "Bhubaneswar, India",
         image: project_img_3,
@@ -126,6 +131,7 @@ export const projectsData = [
     },
     {
         title: "Central Square",
+        transactionType: "Purchase",
         price: "₹14,50,000",
         location: "Chennai, India",
         image: project_img_4,
@@ -156,6 +162,7 @@ export const projectsData = [
     },
     {
         title: "Oceanfront Oasis",
+        transactionType: "Rent",
         price: "₹12,90,000",
         location: "Bangalore, India",
         image: project_img_5,
@@ -186,6 +193,7 @@ export const projectsData = [
     },
     {
         title: "Mountain Retreat",
+        transactionType: "Purchase",
         price: "₹11,95,000",
         location: "Pune, India",
         image: project_img_6,
