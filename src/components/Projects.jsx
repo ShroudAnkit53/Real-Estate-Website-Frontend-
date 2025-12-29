@@ -9,18 +9,8 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTenure, setSelectedTenure] = useState(10);
-
-  // FILTER STATE
-  const [showFilter, setShowFilter] = useState(false);
-  const [filters, setFilters] = useState({
-    status: "",
-    location: "",
-    minPrice: "",
-    maxPrice: "",
-    features: [],
-  });
-
-  // ADD ESTATE STATE
+  
+  // Add Estate Feature
   const [showAddEstate, setShowAddEstate] = useState(false);
   const [newEstate, setNewEstate] = useState({
     title: "",
@@ -39,40 +29,25 @@ const Projects = () => {
   });
 
   const [userEstates, setUserEstates] = useState([]);
-
-  // ✅ MOVE FILTER LOGIC HERE (BEFORE useEffect)
-  const allProjects = [...projectsData, ...userEstates];
-
-  const availableFeatures = Array.from(
-    new Set(allProjects.flatMap((p) => p.features || []))
-  );
-
-  const filteredProjects = allProjects.filter((project) => {
-    const price = Number(String(project.price || "").replace(/[^0-9]/g, ""));
-
-    if (filters.status && project.status !== filters.status) return false;
-
-    if (
-      filters.location &&
-      !String(project.location || "")
-        .toLowerCase()
-        .includes(filters.location.toLowerCase())
-    )
-      return false;
-
-    if (filters.minPrice && price < Number(filters.minPrice)) return false;
-    if (filters.maxPrice && price > Number(filters.maxPrice)) return false;
-
-    if (
-      filters.features.length &&
-      !filters.features.every((f) => (project.features || []).includes(f))
-    )
-      return false;
-
-    return true;
+  
+  // Book Schedule Feature
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleData, setScheduleData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    date: "",
+    time: "",
+    notes: ""
+  });
+  
+  // Notification State
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "success" // success, error, info
   });
 
-  // RESPONSIVE CARDS
   useEffect(() => {
     const updateCardsToShow = () => {
       if (window.innerWidth >= 1024) {
@@ -88,49 +63,56 @@ const Projects = () => {
     return () => window.removeEventListener("resize", updateCardsToShow);
   }, []);
 
-  // AUTO SLIDE (NOW SAFE)
+  // Auto slide when not in "View All" mode
   useEffect(() => {
     if (!isViewAll && cardsToShow === 1 && !selectedProject) {
       const interval = setInterval(() => {
-        setCurrentIndex((prevIndex) =>
-          filteredProjects.length
-            ? (prevIndex + 1) % filteredProjects.length
-            : 0
-        );
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % projectsData.length);
       }, 4000);
-
       return () => clearInterval(interval);
     }
-  }, [isViewAll, cardsToShow, filteredProjects.length, selectedProject]);
+  }, [isViewAll, cardsToShow, projectsData.length, selectedProject]);
+
+  // Auto-hide notification after 5 seconds
+  useEffect(() => {
+    if (notification.show) {
+      const timer = setTimeout(() => {
+        setNotification({ show: false, message: "", type: "success" });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification.show]);
 
   const handleViewAll = () => {
     setIsViewAll(true);
     setCardsToShow(projectsData.length);
     setCurrentIndex(0);
   };
+
   const prevSlide = () => {
     setCurrentIndex((prev) =>
-      filteredProjects.length
-        ? (prev - 1 + filteredProjects.length) % filteredProjects.length
-        : 0
+      (prev - 1 + projectsData.length) % projectsData.length
     );
   };
 
   const nextSlide = () => {
     setCurrentIndex((prev) =>
-      filteredProjects.length ? (prev + 1) % filteredProjects.length : 0
+      (prev + 1) % projectsData.length
     );
   };
 
   const openProjectDetails = (project) => {
     setSelectedProject(project);
-    document.body.style.overflow = "hidden"; // Prevent background scrolling
+    document.body.style.overflow = "hidden";
   };
 
   const closeProjectDetails = () => {
     setSelectedProject(null);
-    document.body.style.overflow = "auto"; // Restore scrolling
+    setShowSchedule(false);
+    setShowPayment(false);
+    document.body.style.overflow = "auto";
   };
+
   const handleAddEstate = () => {
     if (
       !newEstate.title ||
@@ -139,13 +121,14 @@ const Projects = () => {
       !newEstate.description ||
       !newEstate.photo
     ) {
-      alert("Please fill all required fields and upload a photo.");
+      showNotification("Please fill all required fields and upload a photo.", "error");
       return;
     }
 
     const photoURL = URL.createObjectURL(newEstate.photo);
     const basePrice = Number(newEstate.price);
     const finalPrice = basePrice + basePrice * 0.15;
+    
     const estateCard = {
       id: Date.now(),
       title: newEstate.title,
@@ -155,21 +138,22 @@ const Projects = () => {
       image: photoURL,
       status: newEstate.status,
       description: newEstate.description,
-      features: newEstate.features.filter((f) => f.trim() !== ""),
+      features: newEstate.features.filter(f => f.trim() !== ""),
       timeline: {
         duration: newEstate.timeline.duration,
         area: newEstate.timeline.area,
         completionDate: newEstate.timeline.completionDate,
         teamSize: newEstate.timeline.teamSize,
       },
-      isUserListed: true,
+      isUserListed: true
     };
 
-    setUserEstates((prev) => [...prev, estateCard]);
-
+    setUserEstates(prev => [...prev, estateCard]);
     setShowAddEstate(false);
+    
+    showNotification("Your estate has been listed successfully!", "success");
 
-    // reset form
+    // Reset form
     setNewEstate({
       title: "",
       price: "",
@@ -186,8 +170,50 @@ const Projects = () => {
       photo: null,
     });
   };
+
   const handleDeleteEstate = (id) => {
-    setUserEstates((prev) => prev.filter((e) => e.id !== id));
+    setUserEstates(prev => prev.filter(e => e.id !== id));
+    showNotification("Estate has been removed successfully!", "info");
+  };
+
+  const handleScheduleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!scheduleData.name || !scheduleData.email || !scheduleData.phone || !scheduleData.date || !scheduleData.time) {
+      showNotification("Please fill all required fields.", "error");
+      return;
+    }
+
+    // Here you would typically send the data to your backend
+    console.log("Schedule Booking:", {
+      project: selectedProject?.title,
+      ...scheduleData
+    });
+
+    // Show success notification
+    showNotification(
+      `Schedule booked successfully! Our team will contact you at ${scheduleData.phone} to confirm.`,
+      "success"
+    );
+
+    // Reset form and close modal
+    setScheduleData({
+      name: "",
+      email: "",
+      phone: "",
+      date: "",
+      time: "",
+      notes: ""
+    });
+    setShowSchedule(false);
+  };
+
+  const showNotification = (message, type) => {
+    setNotification({
+      show: true,
+      message,
+      type
+    });
   };
 
   return (
@@ -199,37 +225,72 @@ const Projects = () => {
       className="container mx-auto py-4 pt-20 px-6 md:px-20 lg:px-32 my-20 w-full overflow-hidden"
       id="Projects"
     >
+      {/* Notification Popup - Fixed at top */}
+      <AnimatePresence>
+        {notification.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            className={`fixed top-0 left-0 right-0 z-[100] rounded-b-lg shadow-xl p-4 text-white ${
+              notification.type === "success" ? "bg-green-500" :
+              notification.type === "error" ? "bg-red-500" :
+              "bg-blue-500"
+            }`}
+          >
+            <div className="container mx-auto flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  {notification.type === "success" ? (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : notification.type === "error" ? (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="font-medium">{notification.message}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setNotification({ show: false, message: "", type: "success" })}
+                className="ml-4 flex-shrink-0 text-white/80 hover:text-white"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Centered Header */}
-      <div className="mb-12 relative">
-        {/* Centered Title and Description */}
-       <div className="flex items-center justify-between flex-wrap gap-4">
-    
-    {/* LEFT — Buttons */}
-    <div className="flex gap-3">
-      <button
-        onClick={() => setShowFilter(true)}
-        className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg bg-white hover:bg-gray-100 transition"
-      >
-        Filter
-      </button>
-
-      <button
-        onClick={() => setShowAddEstate(true)}
-        className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
-      >
-        Add Your Estate
-      </button>
-    </div>
-
-    {/* RIGHT — Title */}
-    <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-4xl font-bold text-center">
-  Projects{" "}
-  <span className="underline underline-offset-4 decoration-1 font-light">
-    Completed
-  </span>
-</h1>
-
-        </div>
+      <div className="text-center mb-12 relative">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-3">
+          Projects{" "}
+          <span className="underline underline-offset-4 decoration-1 font-light">
+            Completed
+          </span>
+        </h1>
+        <p className="text-gray-500 max-w-xl mx-auto mb-8">
+          Crafting Spaces, Building Legacies - Explore Our Portfolio
+        </p>
+        
+        <button
+          onClick={() => setShowAddEstate(true)}
+          className="mt-4 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
+        >
+          Add Your Estate
+        </button>
 
         {/* View All Button - Right aligned (desktop only) */}
         {!isViewAll && (
@@ -268,7 +329,7 @@ const Projects = () => {
         )}
       </div>
 
-      {/* Mobile View All Button - Centered below header */}
+      {/* Mobile View All Button */}
       {!isViewAll && (
         <div className="flex justify-center mb-8 sm:hidden">
           <motion.button
@@ -301,12 +362,13 @@ const Projects = () => {
           </motion.button>
         </div>
       )}
+
+      {/* Add Estate Modal */}
       {showAddEstate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Add Your Estate</h2>
-
-            {/* Title */}
+            {/* ... (existing estate form remains same) ... */}
             <input
               type="text"
               placeholder="Property Title"
@@ -316,8 +378,6 @@ const Projects = () => {
                 setNewEstate({ ...newEstate, title: e.target.value })
               }
             />
-
-            {/* Price */}
             <input
               type="number"
               placeholder="Price (₹)"
@@ -327,8 +387,6 @@ const Projects = () => {
                 setNewEstate({ ...newEstate, price: e.target.value })
               }
             />
-
-            {/* Location */}
             <input
               type="text"
               placeholder="Location"
@@ -338,8 +396,6 @@ const Projects = () => {
                 setNewEstate({ ...newEstate, location: e.target.value })
               }
             />
-
-            {/* Status */}
             <select
               className="w-full border p-2 rounded mb-3"
               value={newEstate.status}
@@ -351,8 +407,6 @@ const Projects = () => {
               <option value="In Progress">In Progress</option>
               <option value="Upcoming">Upcoming</option>
             </select>
-
-            {/* Description */}
             <textarea
               placeholder="Description"
               className="w-full border p-2 rounded mb-3"
@@ -362,10 +416,7 @@ const Projects = () => {
                 setNewEstate({ ...newEstate, description: e.target.value })
               }
             />
-
-            {/* FEATURES */}
             <label className="font-semibold">Features</label>
-
             {newEstate.features.map((feature, i) => (
               <input
                 key={i}
@@ -380,7 +431,6 @@ const Projects = () => {
                 }}
               />
             ))}
-
             <button
               className="text-blue-600 text-sm mb-3"
               onClick={() =>
@@ -392,12 +442,9 @@ const Projects = () => {
             >
               + Add Feature
             </button>
-
-            {/* TIMELINE */}
             <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
-
             <input
-              type="number"
+              type="text"
               placeholder="Duration (e.g., 14 Months)"
               className="w-full border p-2 rounded mb-2"
               value={newEstate.timeline.duration}
@@ -408,9 +455,8 @@ const Projects = () => {
                 })
               }
             />
-
             <input
-              type="number"
+              type="text"
               placeholder="Area (e.g., 4200 Sq. Ft.)"
               className="w-full border p-2 rounded mb-2"
               value={newEstate.timeline.area}
@@ -421,9 +467,8 @@ const Projects = () => {
                 })
               }
             />
-
             <input
-              type="date"
+              type="text"
               placeholder="Completion Date"
               className="w-full border p-2 rounded mb-2"
               value={newEstate.timeline.completionDate}
@@ -437,9 +482,8 @@ const Projects = () => {
                 })
               }
             />
-
             <input
-              type="number"
+              type="text"
               placeholder="Team Size"
               className="w-full border p-2 rounded mb-3"
               value={newEstate.timeline.teamSize}
@@ -453,8 +497,6 @@ const Projects = () => {
                 })
               }
             />
-
-            {/* IMAGE */}
             <input
               type="file"
               accept="image/*"
@@ -463,8 +505,6 @@ const Projects = () => {
                 setNewEstate({ ...newEstate, photo: e.target.files[0] })
               }
             />
-
-            {/* Buttons */}
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowAddEstate(false)}
@@ -472,120 +512,11 @@ const Projects = () => {
               >
                 Cancel
               </button>
-
               <button
                 onClick={handleAddEstate}
                 className="px-4 py-2 bg-blue-600 text-white rounded"
               >
                 Submit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showFilter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Filter Projects</h2>
-
-            {/* STATUS */}
-            <select
-              className="w-full border p-2 rounded mb-3"
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
-              }
-            >
-              <option value="">All Status</option>
-              <option value="Completed">Completed</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Upcoming">Upcoming</option>
-            </select>
-
-            {/* LOCATION */}
-            <input
-              type="text"
-              placeholder="Location"
-              className="w-full border p-2 rounded mb-3"
-              value={filters.location}
-              onChange={(e) =>
-                setFilters({ ...filters, location: e.target.value })
-              }
-            />
-
-            {/* PRICE RANGE */}
-            <div className="flex gap-3 mb-3">
-              <input
-                type="number"
-                placeholder="Min ₹"
-                className="w-full border p-2 rounded"
-                value={filters.minPrice}
-                onChange={(e) =>
-                  setFilters({ ...filters, minPrice: e.target.value })
-                }
-              />
-              <input
-                type="number"
-                placeholder="Max ₹"
-                className="w-full border p-2 rounded"
-                value={filters.maxPrice}
-                onChange={(e) =>
-                  setFilters({ ...filters, maxPrice: e.target.value })
-                }
-              />
-            </div>
-
-            {/* FEATURES */}
-            <label className="font-semibold mb-2 block">Features</label>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {availableFeatures.length === 0 ? (
-                <p className="text-sm text-gray-500 col-span-2">
-                  No features available to filter.
-                </p>
-              ) : (
-                availableFeatures.map((feature, i) => (
-                  <label key={i} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={filters.features.includes(feature)}
-                      onChange={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          features: prev.features.includes(feature)
-                            ? prev.features.filter((f) => f !== feature)
-                            : [...prev.features, feature],
-                        }))
-                      }
-                    />
-                    {feature}
-                  </label>
-                ))
-              )}
-            </div>
-
-            {/* BUTTONS */}
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() =>
-                  setFilters({
-                    status: "",
-                    location: "",
-                    minPrice: "",
-                    maxPrice: "",
-                    features: [],
-                  })
-                }
-                className="px-4 py-2 border rounded"
-              >
-                Clear
-              </button>
-
-              <button
-                onClick={() => setShowFilter(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                Apply
               </button>
             </div>
           </div>
@@ -601,19 +532,8 @@ const Projects = () => {
               onClick={prevSlide}
               className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 19l-7-7 7-7"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
@@ -621,19 +541,8 @@ const Projects = () => {
               onClick={nextSlide}
               className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg p-3 rounded-full transition"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </>
@@ -651,7 +560,7 @@ const Projects = () => {
               : "none",
           }}
         >
-          {filteredProjects.map((project, index) => (
+          {[...projectsData, ...userEstates].map((project, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
@@ -676,11 +585,7 @@ const Projects = () => {
                     alt={project.title}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
-
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-
-                  {/* Status badge */}
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
                     <span className="text-sm font-semibold text-blue-600">
                       {project.status || "Completed"}
@@ -693,7 +598,6 @@ const Projects = () => {
                   <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
                     {project.title}
                   </h3>
-
                   <div className="flex items-center text-gray-600 mb-3">
                     <svg
                       className="w-4 h-4 mr-2 text-gray-400"
@@ -709,7 +613,6 @@ const Projects = () => {
                     </svg>
                     <span className="text-sm">{project.location}</span>
                   </div>
-
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div>
                       <p className="text-lg font-bold text-blue-600">
@@ -721,7 +624,6 @@ const Projects = () => {
                         </p>
                       )}
                     </div>
-
                     <button
                       onClick={() => openProjectDetails(project)}
                       className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors duration-300 group"
@@ -744,18 +646,16 @@ const Projects = () => {
                     </button>
                   </div>
                 </div>
-
-                {/* Decorative bottom border on hover */}
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Dots indicator (only in slider mode) */}
+        {/* Dots indicator */}
         {!isViewAll && cardsToShow === 1 && (
           <div className="flex justify-center mt-10 space-x-2">
-            {filteredProjects.map((_, index) => (
+            {projectsData.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
@@ -770,7 +670,7 @@ const Projects = () => {
           </div>
         )}
 
-        {/* Back to Slider Button (only shown in View All mode on mobile) */}
+        {/* Back to Slider Button */}
         {isViewAll && (
           <div className="flex justify-center mt-10">
             <motion.button
@@ -871,7 +771,7 @@ const Projects = () => {
               {/* Modal Content */}
               <div className="flex-1 overflow-y-auto p-6 md:p-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Left Column - Image Gallery & Map */}
+                  {/* Left Column */}
                   <div>
                     <div className="rounded-xl overflow-hidden shadow-lg mb-6">
                       <img
@@ -899,7 +799,6 @@ const Projects = () => {
                         Project Location
                       </h3>
                       <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200">
-                        {/* Interactive Map - Using Google Maps iframe */}
                         <div className="h-64 w-full bg-gray-100 relative">
                           <iframe
                             title={`Location map for ${selectedProject.title}`}
@@ -933,8 +832,7 @@ const Projects = () => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-500 mt-3">
-                        Interactive map showing the project location. You can
-                        zoom and pan to explore the area.
+                        Interactive map showing the project location.
                       </p>
                     </div>
                   </div>
@@ -990,7 +888,7 @@ const Projects = () => {
                       </p>
                     </div>
 
-                    {/* Features/Specifications */}
+                    {/* Features */}
                     <div className="mb-8">
                       <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                         <svg
@@ -1034,7 +932,7 @@ const Projects = () => {
                       </div>
                     </div>
 
-                    {/* Timeline/Stats */}
+                    {/* Timeline */}
                     <div className="bg-gradient-to-r from-blue-50 to-white rounded-xl p-6 mb-6">
                       <h3 className="text-xl font-bold text-gray-800 mb-4">
                         Project Details
@@ -1082,43 +980,6 @@ const Projects = () => {
                         )}
                       </div>
                     </div>
-
-                    {/* Specifications */}
-                    {selectedProject.specifications && (
-                      <div className="mb-6">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4">
-                          Specifications
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="text-sm text-gray-500">
-                              Project Type
-                            </div>
-                            <div className="font-semibold">
-                              {selectedProject.specifications.type}
-                            </div>
-                          </div>
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="text-sm text-gray-500">Floors</div>
-                            <div className="font-semibold">
-                              {selectedProject.specifications.floors}
-                            </div>
-                          </div>
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="text-sm text-gray-500">Units</div>
-                            <div className="font-semibold">
-                              {selectedProject.specifications.units}
-                            </div>
-                          </div>
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="text-sm text-gray-500">Parking</div>
-                            <div className="font-semibold">
-                              {selectedProject.specifications.parking}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1135,7 +996,29 @@ const Projects = () => {
 
                   {/* RIGHT SIDE BUTTONS */}
                   <div className="flex items-center gap-3">
-                    {/* ✅ PAYMENT BUTTON (ADDED) */}
+                    {/* BOOK SCHEDULE BUTTON */}
+                    <button
+                      onClick={() => setShowSchedule(true)}
+                      className="cursor-pointer px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-medium rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-300 flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Book a Schedule
+                    </button>
+
+                    {/* PAYMENT BUTTON */}
                     <button
                       onClick={() => setShowPayment(true)}
                       className="cursor-pointer px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-300"
@@ -1143,7 +1026,7 @@ const Projects = () => {
                       Payment
                     </button>
 
-                    {/* EXISTING DOWNLOAD BUTTON */}
+                    {/* DOWNLOAD BUTTON */}
                     <button className="cursor-pointer px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 flex items-center gap-2">
                       <svg
                         className="w-5 h-5"
@@ -1167,10 +1050,130 @@ const Projects = () => {
             </motion.div>
           </>
         )}
+      </AnimatePresence>
 
+      {/* Schedule Booking Modal */}
+      <AnimatePresence>
+        {showSchedule && selectedProject && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSchedule(false)}
+              className="fixed inset-0 bg-black/50 z-[60]"
+            />
+
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 20 }}
+              className="fixed inset-0 flex items-center justify-center z-[61]"
+            >
+              <div className="bg-white rounded-xl w-[400px] p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Book Site Visit Schedule
+                  </h3>
+                  <button
+                    onClick={() => setShowSchedule(false)}
+                    className="text-gray-500 hover:text-red-600 transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-4">
+                  Schedule a visit for <strong>{selectedProject.title}</strong>
+                </p>
+
+                <form onSubmit={handleScheduleSubmit}>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Full Name *"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      value={scheduleData.name}
+                      onChange={(e) =>
+                        setScheduleData({ ...scheduleData, name: e.target.value })
+                      }
+                      required
+                    />
+
+                    <input
+                      type="email"
+                      placeholder="Email Address *"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      value={scheduleData.email}
+                      onChange={(e) =>
+                        setScheduleData({ ...scheduleData, email: e.target.value })
+                      }
+                      required
+                    />
+
+                    <input
+                      type="tel"
+                      placeholder="Phone Number *"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      value={scheduleData.phone}
+                      onChange={(e) =>
+                        setScheduleData({ ...scheduleData, phone: e.target.value })
+                      }
+                      required
+                    />
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        className="w-full p-2 border border-gray-300 rounded"
+                        value={scheduleData.date}
+                        onChange={(e) =>
+                          setScheduleData({ ...scheduleData, date: e.target.value })
+                        }
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                      />
+
+                      <input
+                        type="time"
+                        className="w-full p-2 border border-gray-300 rounded"
+                        value={scheduleData.time}
+                        onChange={(e) =>
+                          setScheduleData({ ...scheduleData, time: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+
+                    <textarea
+                      placeholder="Additional Notes (optional)"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      rows="3"
+                      value={scheduleData.notes}
+                      onChange={(e) =>
+                        setScheduleData({ ...scheduleData, notes: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full mt-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-300"
+                  >
+                    Confirm Booking
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Modal */}
+      <AnimatePresence>
         {showPayment && selectedProject && (
           <>
-            {/* Payment Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1179,7 +1182,6 @@ const Projects = () => {
               className="fixed inset-0 bg-black/50 z-[60]"
             />
 
-            {/* Payment Modal */}
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1188,7 +1190,6 @@ const Projects = () => {
               className="fixed inset-0 flex items-center justify-center z-[61]"
             >
               <div className="bg-white rounded-xl w-[360px] p-6 shadow-2xl">
-                {/* Header */}
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-bold text-gray-800">
                     Payment Details
@@ -1207,7 +1208,7 @@ const Projects = () => {
                   );
                   const downPayment = price * 0.3;
                   const loanAmount = price - downPayment;
-                  const interestRate = 0.08 / 12; // 8% annual
+                  const interestRate = 0.08 / 12;
                   const months = selectedTenure * 12;
 
                   const emi =
@@ -1218,7 +1219,6 @@ const Projects = () => {
 
                   return (
                     <>
-                      {/* Price Info */}
                       <div className="space-y-2 text-sm mb-4">
                         <div className="flex justify-between">
                           <span>Total Price</span>
@@ -1240,7 +1240,6 @@ const Projects = () => {
                         </div>
                       </div>
 
-                      {/* EMI Tenure */}
                       <div className="mb-4">
                         <p className="text-sm font-medium mb-2">
                           Choose EMI Tenure
@@ -1262,7 +1261,6 @@ const Projects = () => {
                         </div>
                       </div>
 
-                      {/* EMI Amount */}
                       <div className="bg-gray-50 p-3 rounded-lg text-center mb-4">
                         <p className="text-sm text-gray-600">Monthly EMI</p>
                         <p className="text-xl font-bold text-blue-600">
@@ -1270,8 +1268,13 @@ const Projects = () => {
                         </p>
                       </div>
 
-                      {/* Pay Button */}
-                      <button className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                      <button 
+                        onClick={() => {
+                          setShowPayment(false);
+                          showNotification("Payment initiated successfully! Our team will contact you shortly.", "success");
+                        }}
+                        className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      >
                         Proceed to Pay
                       </button>
                     </>
