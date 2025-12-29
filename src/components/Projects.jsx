@@ -9,20 +9,23 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTenure, setSelectedTenure] = useState(10);
-  
-  // FILTER STATE
+
+  // FILTER STATE (from first code)
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState({
     status: "",
+    transactionType: "",
     location: "",
     minPrice: "",
     maxPrice: "",
-    propertyType: "",
-    bedrooms: "",
-    transactionType: ""
+    features: [],
+    areaMin: "",
+    areaMax: "",
+    yearBuilt: "",
+    propertyType: ""
   });
 
-  // ADD ESTATE STATE
+  // ADD ESTATE STATE (from second code)
   const [showAddEstate, setShowAddEstate] = useState(false);
   const [newEstate, setNewEstate] = useState({
     title: "",
@@ -38,12 +41,12 @@ const Projects = () => {
       teamSize: "",
     },
     photo: null,
-    propertyType: "Residential",
-    bedrooms: "2",
-    transactionType: "Sale"
+    transactionType: "Purchase",
+    propertyType: "Residential"
   });
 
   const [userEstates, setUserEstates] = useState([]);
+  const [activeFilterCount, setActiveFilterCount] = useState(0);
   
   // Book Schedule Feature
   const [showSchedule, setShowSchedule] = useState(false);
@@ -60,45 +63,72 @@ const Projects = () => {
   const [notification, setNotification] = useState({
     show: false,
     message: "",
-    type: "success"
+    type: "success" // success, error, info
   });
 
-  // Get unique values for filter dropdowns
+  // Combine projectsData with userEstates
   const allProjects = [...projectsData, ...userEstates];
-  
-  const uniqueLocations = [...new Set(allProjects.map(p => p.location))];
-  const uniqueStatuses = ["Completed", "In Progress", "Upcoming"];
-  const propertyTypes = ["Residential", "Commercial", "Industrial", "Mixed Use"];
-  const bedroomsOptions = ["1", "2", "3", "4", "5+"];
-  const transactionTypes = ["Sale", "Rent", "Lease"];
 
-  // Filter projects based on selected filters
-  const filteredProjects = allProjects.filter(project => {
+  // Available features for filter checkboxes (from first code)
+  const availableFeatures = Array.from(
+    new Set(allProjects.flatMap(p => p.features || []))
+  );
+
+  // Calculate active filters count (from first code)
+  useEffect(() => {
+    let count = 0;
+    if (filters.status) count++;
+    if (filters.transactionType) count++;
+    if (filters.location) count++;
+    if (filters.minPrice || filters.maxPrice) count++;
+    if (filters.areaMin || filters.areaMax) count++;
+    if (filters.yearBuilt) count++;
+    if (filters.propertyType) count++;
+    if (filters.features.length > 0) count++;
+    setActiveFilterCount(count);
+  }, [filters]);
+
+  // Filter projects function (from first code with modifications)
+  const filteredProjects = allProjects.filter((project) => {
+    const price = Number(String(project.price || "").replace(/[^0-9]/g, ""));
+    const area = Number(String(project.timeline?.area || "0").replace(/[^0-9]/g, ""));
+    
     // Status filter
     if (filters.status && project.status !== filters.status) return false;
-    
-    // Location filter
-    if (filters.location && !project.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
-    
-    // Price range filter
-    const priceNumber = parseFloat(project.price.replace(/[^0-9.-]+/g, ""));
-    if (filters.minPrice && priceNumber < parseFloat(filters.minPrice)) return false;
-    if (filters.maxPrice && priceNumber > parseFloat(filters.maxPrice)) return false;
-    
-    // Property type filter
-    if (filters.propertyType && project.propertyType !== filters.propertyType) return false;
-    
-    // Bedrooms filter
-    if (filters.bedrooms && project.bedrooms !== filters.bedrooms) return false;
     
     // Transaction type filter
     if (filters.transactionType && project.transactionType !== filters.transactionType) return false;
     
+    // Location filter
+    if (filters.location && 
+        !String(project.location || "")
+          .toLowerCase()
+          .includes(filters.location.toLowerCase())) return false;
+    
+    // Price range filter
+    if (filters.minPrice && price < Number(filters.minPrice)) return false;
+    if (filters.maxPrice && price > Number(filters.maxPrice)) return false;
+    
+    // Area range filter
+    if (filters.areaMin && area < Number(filters.areaMin)) return false;
+    if (filters.areaMax && area > Number(filters.areaMax)) return false;
+    
+    // Year built filter
+    if (filters.yearBuilt) {
+      const projectYear = project.timeline?.completed?.split('-')[0] || 
+                         project.timeline?.completionDate?.split('-')[0] || '';
+      if (projectYear !== filters.yearBuilt) return false;
+    }
+    
+    // Property type filter
+    if (filters.propertyType && project.propertyType !== filters.propertyType) return false;
+    
+    // Features filter (all selected features must be present)
+    if (filters.features.length > 0 && 
+        !filters.features.every(f => (project.features || []).includes(f))) return false;
+    
     return true;
   });
-
-  // Count active filters
-  const activeFilterCount = Object.values(filters).filter(value => value !== "").length;
 
   useEffect(() => {
     const updateCardsToShow = () => {
@@ -117,7 +147,7 @@ const Projects = () => {
 
   // Auto slide when not in "View All" mode
   useEffect(() => {
-    if (!isViewAll && cardsToShow === 1 && !selectedProject) {
+    if (!isViewAll && cardsToShow === 1 && !selectedProject && filteredProjects.length > 0) {
       const interval = setInterval(() => {
         setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredProjects.length);
       }, 4000);
@@ -143,13 +173,15 @@ const Projects = () => {
 
   const prevSlide = () => {
     setCurrentIndex((prev) =>
-      (prev - 1 + filteredProjects.length) % filteredProjects.length
+      filteredProjects.length
+        ? (prev - 1 + filteredProjects.length) % filteredProjects.length
+        : 0
     );
   };
 
   const nextSlide = () => {
     setCurrentIndex((prev) =>
-      (prev + 1) % filteredProjects.length
+      filteredProjects.length ? (prev + 1) % filteredProjects.length : 0
     );
   };
 
@@ -197,10 +229,9 @@ const Projects = () => {
         completionDate: newEstate.timeline.completionDate,
         teamSize: newEstate.timeline.teamSize,
       },
-      propertyType: newEstate.propertyType,
-      bedrooms: newEstate.bedrooms,
       transactionType: newEstate.transactionType,
-      isUserListed: true
+      propertyType: newEstate.propertyType,
+      isUserListed: true,
     };
 
     setUserEstates(prev => [...prev, estateCard]);
@@ -223,9 +254,8 @@ const Projects = () => {
         teamSize: "",
       },
       photo: null,
-      propertyType: "Residential",
-      bedrooms: "2",
-      transactionType: "Sale"
+      transactionType: "Purchase",
+      propertyType: "Residential"
     });
   };
 
@@ -274,19 +304,24 @@ const Projects = () => {
     });
   };
 
+  // Clear all filters function (from first code)
   const clearFilters = () => {
     setFilters({
       status: "",
+      transactionType: "",
       location: "",
       minPrice: "",
       maxPrice: "",
-      propertyType: "",
-      bedrooms: "",
-      transactionType: ""
+      features: [],
+      areaMin: "",
+      areaMax: "",
+      yearBuilt: "",
+      propertyType: ""
     });
+    showNotification("All filters cleared", "info");
   };
 
-  // Helper function to get features array with fallback
+  // Helper functions for project details (from first code)
   const getFeatures = (project) => {
     if (project.features && Array.isArray(project.features)) {
       return project.features;
@@ -302,7 +337,6 @@ const Projects = () => {
     ];
   };
 
-  // Helper function to get timeline object with fallback
   const getTimeline = (project) => {
     if (project.timeline) {
       return project.timeline;
@@ -316,7 +350,6 @@ const Projects = () => {
     };
   };
 
-  // Helper function to get description with fallback
   const getDescription = (project) => {
     if (project.description) {
       return project.description;
@@ -324,7 +357,6 @@ const Projects = () => {
     return `This ${project.title} project showcases exceptional craftsmanship and attention to detail. Located in ${project.location}, this project represents our commitment to quality and innovation in construction and design.`;
   };
 
-  // Helper function to get specifications with fallback
   const getSpecifications = (project) => {
     if (project.specifications) {
       return project.specifications;
@@ -428,9 +460,9 @@ const Projects = () => {
 
           {/* Center - Title */}
           <h1 className="text-2xl sm:text-4xl font-bold text-center">
-            Properties{" "}
+            Projects{" "}
             <span className="underline underline-offset-4 decoration-1 font-light">
-              For You
+              Completed
             </span>
           </h1>
 
@@ -472,57 +504,41 @@ const Projects = () => {
         </div>
 
         <p className="text-gray-500 max-w-xl mx-auto mb-8 text-center">
-          Find Your Dream Property - Browse Our Portfolio
+          Crafting Spaces, Building Legacies - Explore Our Portfolio
         </p>
       </div>
 
-      {/* Active Filters Display */}
+      {/* Active Filters Display (from first code) */}
       {activeFilterCount > 0 && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-blue-700">Active Filters:</span>
+              <span className="font-medium">Active Filters:</span>
               {filters.status && (
-                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                  <span className="font-medium">Status:</span> {filters.status}
-                </span>
-              )}
-              {filters.location && (
-                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                  <span className="font-medium">Location:</span> {filters.location}
-                </span>
-              )}
-              {filters.propertyType && (
-                <span className="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                  <span className="font-medium">Type:</span> {filters.propertyType}
-                </span>
-              )}
-              {filters.bedrooms && (
-                <span className="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                  <span className="font-medium">Bedrooms:</span> {filters.bedrooms}
+                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
+                  Status: {filters.status}
                 </span>
               )}
               {filters.transactionType && (
-                <span className="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                  <span className="font-medium">Transaction:</span> {filters.transactionType}
+                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">
+                  Type: {filters.transactionType}
                 </span>
               )}
-              {(filters.minPrice || filters.maxPrice) && (
-                <span className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                  <span className="font-medium">Price:</span> 
-                  {filters.minPrice && ` ₹${filters.minPrice}`}
-                  {filters.minPrice && filters.maxPrice && " - "}
-                  {filters.maxPrice && ` ₹${filters.maxPrice}`}
+              {filters.location && (
+                <span className="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full">
+                  Location: {filters.location}
+                </span>
+              )}
+              {filters.features.length > 0 && (
+                <span className="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full">
+                  Features: {filters.features.length}
                 </span>
               )}
             </div>
             <button
               onClick={clearFilters}
-              className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
+              className="text-sm text-red-600 hover:text-red-800"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
               Clear All
             </button>
           </div>
@@ -563,309 +579,385 @@ const Projects = () => {
         </div>
       )}
 
-      {/* Filter Modal */}
+      {/* Filter Modal (from first code) */}
       {showFilter && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-6 text-gray-800 border-b pb-3">Filter Properties</h2>
-            
-            <div className="space-y-5">
-              {/* Status Filter */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Status</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {uniqueStatuses.map(status => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => setFilters(prev => ({
-                        ...prev,
-                        status: prev.status === status ? "" : status
-                      }))}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        filters.status === status
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <h2 className="text-xl font-bold mb-4">Filter Projects</h2>
 
-              {/* Transaction Type */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Transaction Type</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {transactionTypes.map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setFilters(prev => ({
-                        ...prev,
-                        transactionType: prev.transactionType === type ? "" : type
-                      }))}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        filters.transactionType === type
-                          ? "bg-purple-600 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* STATUS */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={filters.status}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
+            >
+              <option value="">All Status</option>
+              <option value="Completed">Completed</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Upcoming">Upcoming</option>
+            </select>
 
-              {/* Property Type */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Property Type</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {propertyTypes.map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setFilters(prev => ({
-                        ...prev,
-                        propertyType: prev.propertyType === type ? "" : type
-                      }))}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        filters.propertyType === type
-                          ? "bg-green-600 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* TRANSACTION TYPE */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={filters.transactionType}
+              onChange={(e) =>
+                setFilters({ ...filters, transactionType: e.target.value })
+              }
+            >
+              <option value="">All Type</option>
+              <option value="Rent">Rent</option>
+              <option value="Purchase">Purchase</option>
+              <option value="Rent & Purchase">Rent & Purchase</option>
+            </select>
 
-              {/* Location Filter */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Location</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search location..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={filters.location}
-                    onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                  />
-                  <svg className="absolute right-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
+            {/* LOCATION */}
+            <input
+              type="text"
+              placeholder="Location"
+              className="w-full border p-2 rounded mb-3"
+              value={filters.location}
+              onChange={(e) =>
+                setFilters({ ...filters, location: e.target.value })
+              }
+            />
 
-              {/* Price Range */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Price Range (₹)</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <input
-                      type="number"
-                      placeholder="Min Price"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      value={filters.minPrice}
-                      onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      placeholder="Max Price"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      value={filters.maxPrice}
-                      onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
+            {/* PROPERTY TYPE */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={filters.propertyType}
+              onChange={(e) =>
+                setFilters({ ...filters, propertyType: e.target.value })
+              }
+            >
+              <option value="">All Property Types</option>
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Industrial">Industrial</option>
+              <option value="Mixed Use">Mixed Use</option>
+            </select>
 
-              {/* Bedrooms Filter */}
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Bedrooms</label>
-                <div className="grid grid-cols-5 gap-2">
-                  {bedroomsOptions.map(beds => (
-                    <button
-                      key={beds}
-                      type="button"
-                      onClick={() => setFilters(prev => ({
-                        ...prev,
-                        bedrooms: prev.bedrooms === beds ? "" : beds
-                      }))}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        filters.bedrooms === beds
-                          ? "bg-yellow-600 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      {beds}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* PRICE RANGE */}
+            <div className="flex gap-3 mb-3">
+              <input
+                type="number"
+                placeholder="Min ₹"
+                className="w-full border p-2 rounded"
+                value={filters.minPrice}
+                onChange={(e) =>
+                  setFilters({ ...filters, minPrice: e.target.value })
+                }
+              />
+              <input
+                type="number"
+                placeholder="Max ₹"
+                className="w-full border p-2 rounded"
+                value={filters.maxPrice}
+                onChange={(e) =>
+                  setFilters({ ...filters, maxPrice: e.target.value })
+                }
+              />
             </div>
 
-            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+            {/* AREA RANGE */}
+            <div className="flex gap-3 mb-3">
+              <input
+                type="number"
+                placeholder="Min Area (sq ft)"
+                className="w-full border p-2 rounded"
+                value={filters.areaMin}
+                onChange={(e) =>
+                  setFilters({ ...filters, areaMin: e.target.value })
+                }
+              />
+              <input
+                type="number"
+                placeholder="Max Area (sq ft)"
+                className="w-full border p-2 rounded"
+                value={filters.areaMax}
+                onChange={(e) =>
+                  setFilters({ ...filters, areaMax: e.target.value })
+                }
+              />
+            </div>
+
+            {/* YEAR BUILT */}
+            <input
+              type="text"
+              placeholder="Year Built"
+              className="w-full border p-2 rounded mb-3"
+              value={filters.yearBuilt}
+              onChange={(e) =>
+                setFilters({ ...filters, yearBuilt: e.target.value })
+              }
+            />
+
+            {/* FEATURES */}
+            <label className="font-semibold mb-2 block">Features</label>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {availableFeatures.length === 0 ? (
+                <p className="text-sm text-gray-500 col-span-2">
+                  No features available to filter.
+                </p>
+              ) : (
+                availableFeatures.map((feature, i) => (
+                  <label key={i} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={filters.features.includes(feature)}
+                      onChange={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          features: prev.features.includes(feature)
+                            ? prev.features.filter((f) => f !== feature)
+                            : [...prev.features, feature],
+                        }))
+                      }
+                    />
+                    {feature}
+                  </label>
+                ))
+              )}
+            </div>
+
+            {/* BUTTONS */}
+            <div className="flex justify-end gap-3">
               <button
-                onClick={clearFilters}
-                className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors duration-300"
+                onClick={() =>
+                  setFilters({
+                    status: "",
+                    transactionType: "",
+                    location: "",
+                    minPrice: "",
+                    maxPrice: "",
+                    features: [],
+                    areaMin: "",
+                    areaMax: "",
+                    yearBuilt: "",
+                    propertyType: ""
+                  })
+                }
+                className="px-4 py-2 border rounded"
               >
-                Reset All
+                Clear
               </button>
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowFilter(false)}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors duration-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowFilter(false);
-                    showNotification("Filters applied successfully!", "success");
-                  }}
-                  className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-300"
-                >
-                  Apply Filters
-                </button>
-              </div>
+
+              <button
+                onClick={() => setShowFilter(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Apply
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add Estate Modal */}
+      {/* Add Estate Modal (from second code) */}
       {showAddEstate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Add Your Estate</h2>
-            
-            <div className="space-y-3">
+
+            {/* Title */}
+            <input
+              type="text"
+              placeholder="Property Title"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.title}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, title: e.target.value })
+              }
+            />
+
+            {/* Price */}
+            <input
+              type="number"
+              placeholder="Price (₹)"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.price}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, price: e.target.value })
+              }
+            />
+
+            {/* Location */}
+            <input
+              type="text"
+              placeholder="Location"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.location}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, location: e.target.value })
+              }
+            />
+
+            {/* Status */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.status}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, status: e.target.value })
+              }
+            >
+              <option value="Completed">Completed</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Upcoming">Upcoming</option>
+            </select>
+
+            {/* Transaction Type */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.transactionType}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, transactionType: e.target.value })
+              }
+            >
+              <option value="Purchase">Purchase</option>
+              <option value="Rent">Rent</option>
+              <option value="Rent & Purchase">Rent & Purchase</option>
+            </select>
+
+            {/* Property Type */}
+            <select
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.propertyType}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, propertyType: e.target.value })
+              }
+            >
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Industrial">Industrial</option>
+              <option value="Mixed Use">Mixed Use</option>
+            </select>
+
+            {/* Description */}
+            <textarea
+              placeholder="Description"
+              className="w-full border p-2 rounded mb-3"
+              rows="3"
+              value={newEstate.description}
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, description: e.target.value })
+              }
+            />
+
+            {/* FEATURES */}
+            <label className="font-semibold">Features</label>
+
+            {newEstate.features.map((feature, i) => (
               <input
+                key={i}
                 type="text"
-                placeholder="Property Title"
-                className="w-full border p-2 rounded"
-                value={newEstate.title}
-                onChange={(e) => setNewEstate({ ...newEstate, title: e.target.value })}
+                className="w-full border p-2 rounded mb-2"
+                placeholder={`Feature ${i + 1}`}
+                value={feature}
+                onChange={(e) => {
+                  const copy = [...newEstate.features];
+                  copy[i] = e.target.value;
+                  setNewEstate({ ...newEstate, features: copy });
+                }}
               />
-              
-              <input
-                type="number"
-                placeholder="Price (₹)"
-                className="w-full border p-2 rounded"
-                value={newEstate.price}
-                onChange={(e) => setNewEstate({ ...newEstate, price: e.target.value })}
-              />
-              
-              <input
-                type="text"
-                placeholder="Location"
-                className="w-full border p-2 rounded"
-                value={newEstate.location}
-                onChange={(e) => setNewEstate({ ...newEstate, location: e.target.value })}
-              />
-              
-              <select
-                className="w-full border p-2 rounded"
-                value={newEstate.status}
-                onChange={(e) => setNewEstate({ ...newEstate, status: e.target.value })}
-              >
-                <option value="Completed">Completed</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Upcoming">Upcoming</option>
-              </select>
-              
-              <select
-                className="w-full border p-2 rounded"
-                value={newEstate.propertyType}
-                onChange={(e) => setNewEstate({ ...newEstate, propertyType: e.target.value })}
-              >
-                <option value="Residential">Residential</option>
-                <option value="Commercial">Commercial</option>
-                <option value="Industrial">Industrial</option>
-                <option value="Mixed Use">Mixed Use</option>
-              </select>
-              
-              <select
-                className="w-full border p-2 rounded"
-                value={newEstate.bedrooms}
-                onChange={(e) => setNewEstate({ ...newEstate, bedrooms: e.target.value })}
-              >
-                <option value="1">1 Bedroom</option>
-                <option value="2">2 Bedrooms</option>
-                <option value="3">3 Bedrooms</option>
-                <option value="4">4 Bedrooms</option>
-                <option value="5+">5+ Bedrooms</option>
-              </select>
-              
-              <select
-                className="w-full border p-2 rounded"
-                value={newEstate.transactionType}
-                onChange={(e) => setNewEstate({ ...newEstate, transactionType: e.target.value })}
-              >
-                <option value="Sale">For Sale</option>
-                <option value="Rent">For Rent</option>
-                <option value="Lease">For Lease</option>
-              </select>
-              
-              <textarea
-                placeholder="Description"
-                className="w-full border p-2 rounded"
-                rows="3"
-                value={newEstate.description}
-                onChange={(e) => setNewEstate({ ...newEstate, description: e.target.value })}
-              />
-              
-              <div>
-                <label className="font-semibold block mb-2">Features</label>
-                {newEstate.features.map((feature, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    className="w-full border p-2 rounded mb-2"
-                    placeholder={`Feature ${i + 1}`}
-                    value={feature}
-                    onChange={(e) => {
-                      const copy = [...newEstate.features];
-                      copy[i] = e.target.value;
-                      setNewEstate({ ...newEstate, features: copy });
-                    }}
-                  />
-                ))}
-                <button
-                  className="text-blue-600 text-sm"
-                  onClick={() => setNewEstate({
-                    ...newEstate,
-                    features: [...newEstate.features, '']
-                  })}
-                >
-                  + Add Feature
-                </button>
-              </div>
-              
-              <input
-                type="file"
-                accept="image/*"
-                className="w-full border p-2 rounded"
-                onChange={(e) => setNewEstate({ ...newEstate, photo: e.target.files[0] })}
-              />
-            </div>
-            
-            <div className="flex justify-end gap-3 mt-6">
+            ))}
+
+            <button
+              className="text-blue-600 text-sm mb-3"
+              onClick={() =>
+                setNewEstate({
+                  ...newEstate,
+                  features: [...newEstate.features, ""],
+                })
+              }
+            >
+              + Add Feature
+            </button>
+
+            {/* TIMELINE */}
+            <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
+
+            <input
+              type="text"
+              placeholder="Duration (e.g., 14 Months)"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.duration}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: { ...newEstate.timeline, duration: e.target.value },
+                })
+              }
+            />
+
+            <input
+              type="text"
+              placeholder="Area (e.g., 4200 Sq. Ft.)"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.area}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: { ...newEstate.timeline, area: e.target.value },
+                })
+              }
+            />
+
+            <input
+              type="text"
+              placeholder="Completion Date (e.g., 2024-12-31)"
+              className="w-full border p-2 rounded mb-2"
+              value={newEstate.timeline.completionDate}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: {
+                    ...newEstate.timeline,
+                    completionDate: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <input
+              type="text"
+              placeholder="Team Size"
+              className="w-full border p-2 rounded mb-3"
+              value={newEstate.timeline.teamSize}
+              onChange={(e) =>
+                setNewEstate({
+                  ...newEstate,
+                  timeline: {
+                    ...newEstate.timeline,
+                    teamSize: e.target.value,
+                  },
+                })
+              }
+            />
+
+            {/* IMAGE */}
+            <input
+              type="file"
+              accept="image/*"
+              className="mb-4"
+              onChange={(e) =>
+                setNewEstate({ ...newEstate, photo: e.target.files[0] })
+              }
+            />
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowAddEstate(false)}
-                className="px-4 py-2 border rounded hover:bg-gray-100"
+                className="px-4 py-2 border rounded"
               >
                 Cancel
               </button>
+
               <button
                 onClick={handleAddEstate}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded"
               >
                 Submit
               </button>
@@ -877,7 +969,7 @@ const Projects = () => {
       {/* Project display container */}
       <div className="overflow-hidden relative">
         {/* LEFT / RIGHT ARROWS (only in slider mode) */}
-        {!isViewAll && filteredProjects.length > 0 && (
+        {!isViewAll && (
           <>
             <button
               onClick={prevSlide}
@@ -897,31 +989,6 @@ const Projects = () => {
               </svg>
             </button>
           </>
-        )}
-
-        {/* No Results Message */}
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-16 bg-gray-50 rounded-xl">
-            <svg className="w-20 h-20 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No properties found</h3>
-            <p className="text-gray-600 mb-6">Try adjusting your filters or adding a new property</p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={clearFilters}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Clear Filters
-              </button>
-              <button
-                onClick={() => setShowAddEstate(true)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Add Property
-              </button>
-            </div>
-          </div>
         )}
 
         <div
@@ -944,12 +1011,12 @@ const Projects = () => {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className={isViewAll ? "" : "flex-shrink-0 w-full sm:w-1/4"}
             >
-              <div className="relative group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white">
+              <div className="relative group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
                 {/* Project image */}
                 {project.isUserListed && (
                   <button
                     onClick={() => handleDeleteEstate(project.id)}
-                    className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700 transition z-10"
+                    className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700 transition"
                   >
                     Delete
                   </button>
@@ -961,41 +1028,52 @@ const Projects = () => {
                     alt={project.title}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
+
+                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                  
-                  {/* Property Type Badge */}
-                  {project.propertyType && (
-                    <div className="absolute top-4 left-4 bg-purple-600 text-white text-xs px-3 py-1 rounded-full">
-                      {project.propertyType}
-                    </div>
-                  )}
-                  
+
                   {/* Status badge */}
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <span className={`text-sm font-semibold ${
-                      project.status === "Completed" ? "text-green-600" :
-                      project.status === "In Progress" ? "text-yellow-600" :
-                      "text-blue-600"
-                    }`}>
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <span className="text-sm font-semibold text-blue-600">
                       {project.status || "Completed"}
                     </span>
                   </div>
-
+                  
                   {/* Transaction Type Badge */}
                   {project.transactionType && (
-                    <div className="absolute bottom-4 left-4 bg-black/80 text-white text-xs px-3 py-1 rounded-full">
-                      {project.transactionType === "Sale" && "💰 For Sale"}
-                      {project.transactionType === "Rent" && "🏠 For Rent"}
-                      {project.transactionType === "Lease" && "📜 For Lease"}
+                    <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <span
+                        className={`text-xs font-semibold ${
+                          project.transactionType === "Rent"
+                            ? "text-green-400"
+                            : project.transactionType === "Purchase"
+                            ? "text-blue-400"
+                            : "text-purple-400"
+                        }`}
+                      >
+                        {project.transactionType === "Rent" && "🏠 Rent"}
+                        {project.transactionType === "Purchase" &&
+                          "💰 Purchase"}
+                        {project.transactionType === "Rent & Purchase" &&
+                          "🔁 Rent & Buy"}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Property Type Badge */}
+                  {project.propertyType && (
+                    <div className="absolute top-12 left-4 bg-purple-600 text-white text-xs px-3 py-1 rounded-full">
+                      {project.propertyType}
                     </div>
                   )}
                 </div>
 
                 {/* Project info */}
-                <div className="p-5">
+                <div className="bg-white p-5">
                   <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
                     {project.title}
                   </h3>
+
                   <div className="flex items-center text-gray-600 mb-3">
                     <svg
                       className="w-4 h-4 mr-2 text-gray-400"
@@ -1012,25 +1090,15 @@ const Projects = () => {
                     <span className="text-sm">{project.location}</span>
                   </div>
 
-                  {/* Property Details */}
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                    {project.bedrooms && (
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        {project.bedrooms} Beds
-                      </span>
-                    )}
-                    {project.timeline?.area && (
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                        </svg>
-                        {project.timeline.area}
-                      </span>
-                    )}
-                  </div>
+                  {/* Area info if available */}
+                  {project.timeline?.area && (
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                      <span className="text-sm">{project.timeline.area}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div>
@@ -1043,6 +1111,7 @@ const Projects = () => {
                         </p>
                       )}
                     </div>
+
                     <button
                       onClick={() => openProjectDetails(project)}
                       className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors duration-300 group"
@@ -1065,13 +1134,40 @@ const Projects = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Decorative bottom border on hover */}
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Dots indicator */}
+        {/* No Results Message */}
+        {filteredProjects.length === 0 && (
+          <div className="text-center py-16">
+            <svg className="w-20 h-20 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No properties found</h3>
+            <p className="text-gray-600 mb-6">Try adjusting your filters or add a new estate</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={clearFilters}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Clear Filters
+              </button>
+              <button
+                onClick={() => setShowAddEstate(true)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
+              >
+                Add Property
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Dots indicator (only in slider mode) */}
         {!isViewAll && cardsToShow === 1 && filteredProjects.length > 1 && (
           <div className="flex justify-center mt-10 space-x-2">
             {filteredProjects.map((_, index) => (
@@ -1089,7 +1185,7 @@ const Projects = () => {
           </div>
         )}
 
-        {/* Back to Slider Button */}
+        {/* Back to Slider Button (only shown in View All mode on mobile) */}
         {isViewAll && (
           <div className="flex justify-center mt-10">
             <motion.button
@@ -1120,7 +1216,7 @@ const Projects = () => {
         )}
       </div>
 
-      {/* PROJECT DETAILS MODAL - FULL CODE RESTORED */}
+      {/* Project Details Modal */}
       <AnimatePresence>
         {selectedProject && (
           <>
@@ -1275,10 +1371,16 @@ const Projects = () => {
                             {selectedProject.status || "Completed"}
                           </span>
                         </div>
-                        {selectedProject.propertyType && (
-                          <div className="px-4 py-2 rounded-full bg-purple-100 text-purple-800">
+                        {selectedProject.transactionType && (
+                          <div className={`px-4 py-2 rounded-full ${
+                            selectedProject.transactionType === "Rent"
+                              ? "bg-green-100 text-green-800"
+                              : selectedProject.transactionType === "Purchase"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}>
                             <span className="font-semibold">
-                              {selectedProject.propertyType}
+                              {selectedProject.transactionType}
                             </span>
                           </div>
                         )}
