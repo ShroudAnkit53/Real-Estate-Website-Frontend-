@@ -44,16 +44,16 @@ const Contact = () => {
             <div className='flex flex-wrap'>
                 <div className="w-full md:w-1/2 text-left">
                    Your Name 
-                   <input type="text" name='Name' className="w-full border border-gray-300 rounded px-4 py-3 mt-2" placeholder='Your Name' required/>
+                   <input type="text" name='Name' className="bg-gray-50 w-full border border-gray-300 rounded px-4 py-3 mt-2" placeholder='Your Name' required/>
                 </div>
                 <div className="w-full md:w-1/2 text-left md:pl-4">
                    Your Email 
-                   <input type="email" name='Email' className="w-full border border-gray-300 rounded px-4 py-3 mt-2" placeholder='Your Email' required/>
+                   <input type="email" name='Email' className="bg-gray-50 w-full border border-gray-300 rounded px-4 py-3 mt-2" placeholder='Your Email' required/>
                 </div>
             </div>
             <div className='my-6 text-left'>
                 Message
-                <textarea name="Message" className="w-full border border-gray-300 rounded px-4 py-3 mt-2 h-48 resize-none" rows="5" placeholder='Your Message' required></textarea>
+                <textarea name="Message" className="bg-gray-50 w-full border border-gray-300 rounded px-4 py-3 mt-2 h-48 resize-none" rows="5" placeholder='Your Message' required></textarea>
             </div>
             <button type="submit" className='bg-blue-600 text-white py-2 px-12 mb-10 rounded'>
                 {result ? result : "Send Message"}
