@@ -829,9 +829,53 @@ const Projects = () => {
         <option value="Rent">Rent</option>
         <option value="Rent & Purchase">Rent & Purchase</option>
       </select>
- 768a97e (form change1)
+ <select
+        className="border rounded p-2 col-span-2"
+        value={newEstate.propertyType}
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, propertyType: e.target.value })
+        }
+      >
+        <option value="Residential">Residential</option>
+        <option value="Commercial">Commercial</option>
+        <option value="Industrial">Industrial</option>
+        <option value="Mixed Use">Mixed Use</option>
+      </select>
+    </div>
+  </div>
+  {/* SECTION: Description */}
+  <div>
+    <h4 className="font-semibold mb-2 text-gray-700">Description</h4>
+    <textarea
+      rows="3"
+      className="w-full border rounded p-2 focus:ring focus:ring-blue-200"
+      value={newEstate.description}
+      onChange={(e) =>
+        setNewEstate({ ...newEstate, description: e.target.value })
+      }
+    />
+    <p className="text-xs text-gray-500 mt-1">
+      Add highlights — nearby schools, road access, amenities, etc.
+    </p>
+  </div>
 
+{/* SECTION: Timeline */}
+  <div>
+    <h4 className="font-semibold mb-3 text-gray-700">Timeline & Specs</h4>
 
+    <div className="grid grid-cols-2 gap-3">
+      <input
+        type="number"
+        placeholder="Duration (Months)"
+        className="border rounded p-2"
+        value={newEstate.timeline.duration}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, duration: e.target.value },
+          })
+        }
+      />
 
 
       <input
