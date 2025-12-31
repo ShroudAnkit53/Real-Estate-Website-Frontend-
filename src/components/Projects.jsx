@@ -36,6 +36,10 @@ const Projects = () => {
       area: "",
       completionDate: "",
       teamSize: "",
+      floors: "",
+  units: "",
+  parking: "",
+  startDate: ""
     },
     photo: null,
     propertyType: "Residential",
@@ -192,10 +196,14 @@ const Projects = () => {
       description: newEstate.description,
       features: newEstate.features.filter(f => f.trim() !== ""),
       timeline: {
-        duration: newEstate.timeline.duration,
-        area: newEstate.timeline.area,
+        duration: `${newEstate.timeline.duration} Months`,
+        area: `${newEstate.timeline.area} Sq. Ft.`,
         completionDate: newEstate.timeline.completionDate,
         teamSize: newEstate.timeline.teamSize,
+        floors: newEstate.timeline.floors,
+  units: newEstate.timeline.units,
+  parking: newEstate.timeline.parking,
+  startDate: newEstate.timeline.startDate,
       },
       propertyType: newEstate.propertyType,
       bedrooms: newEstate.bedrooms,
@@ -221,6 +229,10 @@ const Projects = () => {
         area: "",
         completionDate: "",
         teamSize: "",
+        floors: "",
+  units: "",
+  parking: "",
+  startDate: ""
       },
       photo: null,
       propertyType: "Residential",
@@ -326,17 +338,16 @@ const Projects = () => {
 
   // Helper function to get specifications with fallback
   const getSpecifications = (project) => {
-    if (project.specifications) {
-      return project.specifications;
-    }
-    // Fallback specifications
-    return {
-      type: "Residential Project",
-      floors: "Not specified",
-      units: "Not specified",
-      parking: "Available"
-    };
+  const t = project.timeline || {};
+
+  return {
+    type: project.propertyType || "Residential Project",
+    floors: t.floors || "Not specified",
+    units: t.units || "Not specified",
+    parking: t.parking || "Available"
   };
+};
+
 
   return (
     <motion.div
@@ -744,164 +755,201 @@ const Projects = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-white rounded-xl w-[500px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Add Your Estate</h2>
+{/* Add Estate Form */}
+<div className="space-y-6">
 
-            {/* Title */}
-            <input
-              type="text"
-              placeholder="Property Title"
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.title}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, title: e.target.value })
-              }
-            />
+  {/* SECTION: Basic Information */}
+  <div>
+    <h4 className="font-semibold mb-3 text-gray-700">Basic Information</h4>
 
-            {/* Price */}
-            <input
-              type="number"
-              placeholder="Price (₹)"
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.price}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, price: e.target.value })
-              }
-            />
+    <div className="space-y-3">
+      <div>
+        <label className="text-sm font-medium">Property Title *</label>
+        <input
+          type="text"
+          className="w-full border rounded p-2 mt-1 focus:ring focus:ring-blue-200"
+          value={newEstate.title}
+          onChange={(e) => setNewEstate({ ...newEstate, title: e.target.value })}
+        />
+      </div>
 
-            {/* Location */}
-            <input
-              type="text"
-              placeholder="Location"
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.location}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, location: e.target.value })
-              }
-            />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm font-medium">Price (₹) *</label>
+          <input
+            type="number"
+            className="w-full border rounded p-2 mt-1 focus:ring focus:ring-blue-200"
+            value={newEstate.price}
+            onChange={(e) => setNewEstate({ ...newEstate, price: e.target.value })}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Buyers will see GST + platform charges separately
+          </p>
+        </div>
 
-            {/* Status */}
-            <select
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.status}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, status: e.target.value })
-              }
-            >
-              <option value="Completed">Completed</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Upcoming">Upcoming</option>
-            </select>
+        <div>
+          <label className="text-sm font-medium">Location *</label>
+          <input
+            type="text"
+            className="w-full border rounded p-2 mt-1 focus:ring focus:ring-blue-200"
+            value={newEstate.location}
+            onChange={(e) =>
+              setNewEstate({ ...newEstate, location: e.target.value })
+            }
+          />
+        </div>
+      </div>
+    </div>
+  </div>
 
-            {/* Description */}
-            <textarea
-              placeholder="Description"
-              className="w-full border p-2 rounded mb-3"
-              rows="3"
-              value={newEstate.description}
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, description: e.target.value })
-              }
-            />
 
-            {/* FEATURES */}
-            <label className="font-semibold">Features</label>
+  {/* SECTION: Listing Details */}
+  <div>
+    <h4 className="font-semibold mb-3 text-gray-700">Listing Details</h4>
 
-            {newEstate.features.map((feature, i) => (
-              <input
-                key={i}
-                type="text"
-                className="w-full border p-2 rounded mb-2"
-                placeholder={`Feature ${i + 1}`}
-                value={feature}
-                onChange={(e) => {
-                  const copy = [...newEstate.features];
-                  copy[i] = e.target.value;
-                  setNewEstate({ ...newEstate, features: copy });
-                }}
-              />
-            ))}
+    <div className="grid grid-cols-2 gap-3">
+      <select
+        className="border rounded p-2"
+        value={newEstate.status}
+        onChange={(e) => setNewEstate({ ...newEstate, status: e.target.value })}
+      >
+        <option value="Completed">Completed</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Upcoming">Upcoming</option>
+      </select>
 
-            <button
-              className="text-blue-600 text-sm mb-3"
-              onClick={() =>
-                setNewEstate({
-                  ...newEstate,
-                  features: [...newEstate.features, ""],
-                })
-              }
-            >
-              + Add Feature
-            </button>
+      <select
+        className="border rounded p-2"
+        value={newEstate.transactionType}
+        onChange={(e) =>
+          setNewEstate({ ...newEstate, transactionType: e.target.value })
+        }
+      >
+        <option value="Purchase">Purchase</option>
+        <option value="Rent">Rent</option>
+        <option value="Rent & Purchase">Rent & Purchase</option>
+      </select>
+ 768a97e (form change1)
 
-            {/* TIMELINE */}
-            <h3 className="font-semibold mt-4 mb-2">Timeline</h3>
 
-            <input
-              type="number"
-              placeholder="Duration (e.g., 14 Months)"
-              className="w-full border p-2 rounded mb-2"
-              value={newEstate.timeline.duration}
-              onChange={(e) =>
-                setNewEstate({
-                  ...newEstate,
-                  timeline: { ...newEstate.timeline, duration: e.target.value },
-                })
-              }
-            />
 
-            <input
-              type="number"
-              placeholder="Area (e.g., 4200 Sq. Ft.)"
-              className="w-full border p-2 rounded mb-2"
-              value={newEstate.timeline.area}
-              onChange={(e) =>
-                setNewEstate({
-                  ...newEstate,
-                  timeline: { ...newEstate.timeline, area: e.target.value },
-                })
-              }
-            />
 
-            <input
-              type="date"
-              placeholder="Completion Date"
-              className="w-full border p-2 rounded mb-2"
-              value={newEstate.timeline.completionDate}
-              onChange={(e) =>
-                setNewEstate({
-                  ...newEstate,
-                  timeline: {
-                    ...newEstate.timeline,
-                    completionDate: e.target.value,
-                  },
-                })
-              }
-            />
+      <input
+        type="number"
+        placeholder="Area (Sq. Ft.)"
+        className="border rounded p-2"
+        value={newEstate.timeline.area}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, area: e.target.value },
+          })
+        }
+      />
 
-            <input
-              type="number"
-              placeholder="Team Size"
-              className="w-full border p-2 rounded mb-3"
-              value={newEstate.timeline.teamSize}
-              onChange={(e) =>
-                setNewEstate({
-                  ...newEstate,
-                  timeline: {
-                    ...newEstate.timeline,
-                    teamSize: e.target.value,
-                  },
-                })
-              }
-            />
+      <input
+        type="date"
+        className="border rounded p-2"
+        value={newEstate.timeline.completionDate}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, completionDate: e.target.value },
+          })
+        }
+      />
 
-            {/* IMAGE */}
-            <input
-              type="file"
-              accept="image/*"
-              className="mb-4"
-              onChange={(e) =>
-                setNewEstate({ ...newEstate, photo: e.target.files[0] })
-              }
-            />
+      <input
+        type="text"
+        placeholder="Team Size"
+        className="border rounded p-2"
+        value={newEstate.timeline.teamSize}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, teamSize: e.target.value },
+          })
+        }
+      />
+
+      <input
+        type="number"
+        placeholder="Floors"
+        className="border rounded p-2"
+        value={newEstate.timeline.floors}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, floors: e.target.value },
+          })
+        }
+      />
+
+      <input
+        type="number"
+        placeholder="Units"
+        className="border rounded p-2"
+        value={newEstate.timeline.units}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, units: e.target.value },
+          })
+        }
+      />
+
+      {/* Parking Select */}
+      <select
+        className="border rounded p-2 col-span-2"
+        value={newEstate.timeline.parking}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, parking: e.target.value },
+          })
+        }
+      >
+        <option value="">Select Parking</option>
+        <option value="No Parking">No Parking</option>
+        <option value="Open Parking">Open Parking</option>
+        <option value="Covered Parking">Covered Parking</option>
+        <option value="Basement Parking">Basement Parking</option>
+        <option value="Multi-level Parking">Multi-level Parking</option>
+      </select>
+
+      <input
+        type="date"
+        className="border rounded p-2 col-span-2"
+        value={newEstate.timeline.startDate}
+        onChange={(e) =>
+          setNewEstate({
+            ...newEstate,
+            timeline: { ...newEstate.timeline, startDate: e.target.value },
+          })
+        }
+      />
+    </div>
+  </div>
+
+  {/* SECTION: Photo */}
+  <div>
+    <h4 className="font-semibold mb-2 text-gray-700">Upload Photo *</h4>
+    <input
+      type="file"
+      accept="image/*"
+      className="w-full"
+      onChange={(e) =>
+        setNewEstate({ ...newEstate, photo: e.target.files[0] })
+      }
+    />
+    <p className="text-xs text-gray-500 mt-1">
+      Recommended: High-resolution landscape image
+    </p>
+  </div>
+
+</div>
+
+
 
             {/* Buttons */}
             <div className="flex justify-end gap-3">
@@ -1415,40 +1463,82 @@ const Projects = () => {
                         {(() => {
                           const timeline = getTimeline(selectedProject);
                           return (
-                            <>
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-blue-600">
-                                  {timeline.duration}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  Duration
-                                </div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-blue-600">
-                                  {timeline.area}
-                                </div>
-                                <div className="text-sm text-gray-500">Area</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-blue-600">
-                                  {timeline.completed || timeline.completionDate || timeline.startDate || 'N/A'}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {timeline.completed ? 'Completed' : 
-                                   timeline.completionDate ? 'Completion' : 
-                                   timeline.startDate ? 'Start Date' : 'Date'}
-                                </div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-blue-600">
-                                  {timeline.teamSize}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  Team Size
-                                </div>
-                              </div>
-                            </>
+                           <>
+  <div className="text-center">
+    <div className="text-2xl font-bold text-blue-600">
+      {timeline.duration}
+    </div>
+    <div className="text-sm text-gray-500">Duration</div>
+  </div>
+
+  <div className="text-center">
+    <div className="text-2xl font-bold text-blue-600">
+      {timeline.area}
+    </div>
+    <div className="text-sm text-gray-500">Area</div>
+  </div>
+
+  <div className="text-center">
+    <div className="text-2xl font-bold text-blue-600">
+      {timeline.completed || timeline.completionDate || timeline.startDate || "N/A"}
+    </div>
+    <div className="text-sm text-gray-500">
+      {timeline.completed
+        ? "Completed"
+        : timeline.completionDate
+        ? "Completion"
+        : timeline.startDate
+        ? "Start Date"
+        : "Date"}
+    </div>
+  </div>
+
+  <div className="text-center">
+    <div className="text-2xl font-bold text-blue-600">
+      {timeline.teamSize}
+    </div>
+    <div className="text-sm text-gray-500">Team Size</div>
+  </div>
+
+  {/* ✔ NEW FIELDS START HERE */}
+
+  {timeline.floors && (
+    <div className="text-center">
+      <div className="text-2xl font-bold text-blue-600">
+        {timeline.floors}
+      </div>
+      <div className="text-sm text-gray-500">Floors</div>
+    </div>
+  )}
+
+  {timeline.units && (
+    <div className="text-center">
+      <div className="text-2xl font-bold text-blue-600">
+        {timeline.units}
+      </div>
+      <div className="text-sm text-gray-500">Units</div>
+    </div>
+  )}
+
+  {timeline.parking && (
+    <div className="text-center">
+      <div className="text-2xl font-bold text-blue-600">
+        {timeline.parking}
+      </div>
+      <div className="text-sm text-gray-500">Parking</div>
+    </div>
+  )}
+
+  {timeline.startDate && (
+    <div className="text-center">
+      <div className="text-2xl font-bold text-blue-600">
+        {timeline.startDate}
+      </div>
+      <div className="text-sm text-gray-500">Start Date</div>
+    </div>
+  )}
+</>
+
                           );
                         })()}
                       </div>
