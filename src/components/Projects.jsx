@@ -28,7 +28,7 @@ const Projects = () => {
     title: "",
     price: "",
     location: "",
-    status: "Listed",
+    status: "Completed",
     description: "",
     features: [""],
     timeline: {
@@ -42,7 +42,6 @@ const Projects = () => {
     },
     photo: null,
     propertyType: "Residential",
-    bedrooms: "2",
     transactionType: "Sale"
   });
 
@@ -187,7 +186,7 @@ const Projects = () => {
       id: Date.now(),
       title: newEstate.title,
       basePrice,
-      price: `₹${Number(newEstate.price).toLocaleString()}`,
+      price: `₹${finalPrice.toLocaleString()}`,
       location: newEstate.location,
       image: photoURL,
       status: newEstate.status,
@@ -201,7 +200,7 @@ const Projects = () => {
         floors: newEstate.timeline.floors,
   units: newEstate.timeline.units,
   parking: newEstate.timeline.parking,
-  startDate: newEstate.timeline.startDate,
+  
       },
       propertyType: newEstate.propertyType,
       bedrooms: newEstate.bedrooms,
@@ -335,16 +334,17 @@ const Projects = () => {
   };
 
   // Helper function to get specifications with fallback
-  const getSpecifications = (project) => {
+const getSpecifications = (project) => {
   const t = project.timeline || {};
 
   return {
     type: project.propertyType || "Residential Project",
-    floors: t.floors || "Not specified",
-    units: t.units || "Not specified",
-    parking: t.parking || "Available"
+    floors: t.floors || project.specifications?.floors || "Not specified",
+    units: t.units || project.specifications?.units || "Not specified",
+    parking: t.parking || project.specifications?.parking || "Available"
   };
 };
+
 
 
   return (
@@ -860,6 +860,54 @@ const Projects = () => {
       Add highlights — nearby schools, road access, amenities, etc.
     </p>
   </div>
+{/* SECTION: Key Features */}
+<div>
+  <h4 className="font-semibold mb-2 text-gray-700">Key Features</h4>
+
+  {newEstate.features.map((feature, index) => (
+    <div key={index} className="flex gap-2 mb-2">
+      <input
+        type="text"
+        className="w-full border rounded p-2"
+        placeholder="e.g., Swimming Pool, Garden, Gym"
+        value={feature}
+        onChange={(e) => {
+          const updated = [...newEstate.features];
+          updated[index] = e.target.value;
+          setNewEstate({ ...newEstate, features: updated });
+        }}
+      />
+
+      {/* Remove feature */}
+      <button
+        className="px-3 bg-red-500 text-white rounded"
+        onClick={() => {
+          const updated = newEstate.features.filter((_, i) => i !== index);
+          setNewEstate({ ...newEstate, features: updated });
+        }}
+      >
+        –
+      </button>
+    </div>
+  ))}
+
+  {/* Add new feature */}
+  <button
+    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
+    onClick={() =>
+      setNewEstate({
+        ...newEstate,
+        features: [...newEstate.features, ""],
+      })
+    }
+  >
+    + Add Feature
+  </button>
+
+  <p className="text-xs text-gray-500 mt-1">
+    These will appear as bullet points in the property details.
+  </p>
+</div>
 
   {/* SECTION: Timeline */}
   <div>
@@ -1109,16 +1157,17 @@ const Projects = () => {
             >
               <div className="relative group overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white">
                 {/* Project image */}
+                
+                <div className="relative h-64 overflow-hidden">
                 {project.isUserListed && (
                   <button
                     onClick={() => handleDeleteEstate(project.id)}
-                    className="absolute top-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700 transition z-10"
+                    className="absolute bottom-3 right-3 bg-red-600 text-white text-xs px-3 py-1 rounded shadow-lg hover:bg-red-700 transition z-10"
                   >
                     Delete
                   </button>
                 )}
 
-                <div className="relative h-64 overflow-hidden">
                   <img
                     src={project.image}
                     alt={project.title}
@@ -1177,14 +1226,7 @@ const Projects = () => {
 
                   {/* Property Details */}
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                    {project.bedrooms && (
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        {project.bedrooms} Beds
-                      </span>
-                    )}
+                    
                     {project.timeline?.area && (
                       <span className="flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1567,34 +1609,6 @@ const Projects = () => {
     <div className="text-sm text-gray-500">Team Size</div>
   </div>
 
-  {/* ✔ NEW FIELDS START HERE */}
-
-  {timeline.floors && (
-    <div className="text-center">
-      <div className="text-2xl font-bold text-blue-600">
-        {timeline.floors}
-      </div>
-      <div className="text-sm text-gray-500">Floors</div>
-    </div>
-  )}
-
-  {timeline.units && (
-    <div className="text-center">
-      <div className="text-2xl font-bold text-blue-600">
-        {timeline.units}
-      </div>
-      <div className="text-sm text-gray-500">Units</div>
-    </div>
-  )}
-
-  {timeline.parking && (
-    <div className="text-center">
-      <div className="text-2xl font-bold text-blue-600">
-        {timeline.parking}
-      </div>
-      <div className="text-sm text-gray-500">Parking</div>
-    </div>
-  )}
 
 </>
 
