@@ -180,6 +180,19 @@ const Projects = () => {
       showNotification("Please fill all required fields and upload a photo.", "error");
       return;
     }
+// Validate start & completion dates
+const start = new Date(newEstate.timeline.startDate);
+const end = new Date(newEstate.timeline.completionDate);
+
+if (newEstate.timeline.startDate && newEstate.timeline.completionDate) {
+  if (start >= end) {
+    showNotification(
+      "Start date must be earlier than completion date.",
+      "error"
+    );
+    return;
+  }
+}
 
     const photoURL = URL.createObjectURL(newEstate.photo);
     const basePrice = Number(newEstate.price);
@@ -879,6 +892,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, duration: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
 
@@ -898,18 +915,28 @@ const Projects = () => {
     (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
   }
       />
+<div>
+  <label className="text-sm font-medium">Completion / End Date</label>
+  <input
+    type="date"
+    className="border rounded p-2 w-full mt-1 focus:ring focus:ring-blue-200"
+     min={newEstate.timeline.startDate || undefined}
+    value={newEstate.timeline.completionDate}
+    onChange={(e) =>
+      setNewEstate({
+        ...newEstate,
+        timeline: {
+          ...newEstate.timeline,
+          completionDate: e.target.value,
+        },
+      })
+    }
+  />
+  <p className="text-xs text-gray-500 mt-1">
+    Select the expected project completion date.
+  </p>
+</div>
 
-      <input
-        type="date"
-        className="border rounded p-2"
-        value={newEstate.timeline.completionDate}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, completionDate: e.target.value },
-          })
-        }
-      />
 
       <input
         type="number"
@@ -981,17 +1008,27 @@ const Projects = () => {
         <option value="Multi-level Parking">Multi-level Parking</option>
       </select>
 
-      <input
-        type="date"
-        className="border rounded p-2 col-span-2"
-        value={newEstate.timeline.startDate}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, startDate: e.target.value },
-          })
-        }
-      />
+     <div className="col-span-2">
+  <label className="text-sm font-medium">Project Start Date</label>
+  <input
+    type="date"
+    className="border rounded p-2 w-full mt-1 focus:ring focus:ring-blue-200"
+    value={newEstate.timeline.startDate}
+    onChange={(e) =>
+      setNewEstate({
+        ...newEstate,
+        timeline: {
+          ...newEstate.timeline,
+          startDate: e.target.value,
+        },
+      })
+    }
+  />
+  <p className="text-xs text-gray-500 mt-1">
+    Select when construction/work begins.
+  </p>
+</div>
+
     </div>
   </div>
 
