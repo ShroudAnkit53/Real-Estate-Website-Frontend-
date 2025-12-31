@@ -893,6 +893,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, area: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
       <input
@@ -908,7 +912,7 @@ const Projects = () => {
       />
 
       <input
-        type="text"
+        type="number"
         placeholder="Team Size"
         className="border rounded p-2"
         value={newEstate.timeline.teamSize}
@@ -918,6 +922,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, teamSize: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
       <input
@@ -931,6 +939,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, floors: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
       <input
@@ -944,6 +956,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, units: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
       {/* Parking Select */}
