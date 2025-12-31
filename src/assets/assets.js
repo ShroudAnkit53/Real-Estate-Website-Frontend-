@@ -13,9 +13,10 @@ import project_img_3 from './project_img_3.jpg'
 import project_img_4 from './project_img_4.jpg'
 import project_img_5 from './project_img_5.jpg'
 import project_img_6 from './project_img_6.jpg'
-import profile_img_1 from './profile_img_1.png'
-import profile_img_2 from './profile_img_2.png'
-import profile_img_3 from './profile_img_3.png'
+
+import mrbeast from './mrbeast.png'
+import Donald from './licensed-image_circle.png'
+import gandhi from './gandhi_circle_face.png'
 
 export const assets = {
     logo,
@@ -33,6 +34,9 @@ export const assets = {
     project_img_6,
     left_arrow,
     right_arrow,
+    mrbeast,
+    Donald,
+    gandhi
 }
 
 export const projectsData = [
@@ -232,25 +236,25 @@ export const projectsData = [
 
 export const testimonialsData = [
     {
-        name: "Donald Jackman",
-        title: "Marketing Manager",
-        image: profile_img_1,
+        name: "Donald Trump",
+        title: "US President",
+        image: Donald,
         alt: "Portrait of Donald Jackman",
         rating: 5,
         text: "From the very first meeting, they understood my vision and helped me find the perfect property. Their attention to detail and commitment to client satisfaction is unmatched."
     },
     {
-        name: "Richard Nelson",
-        title: "UI/UX Designer",
-        image: profile_img_2,
+        name: "Mahatma Gandhi",
+        title: "Freedom Fighter",
+        image: gandhi,
         alt: "Portrait of Richard Nelson",
         rating: 4,
         text: "From the very first meeting, they understood my vision and helped me find the perfect property. Their attention to detail and commitment to client satisfaction is unmatched."
     },
     {
-        name: "James Washington",
-        title: "Co-Founder",
-        image: profile_img_3,
+        name: "MrBeast",
+        title: "YouTuber",
+        image: mrbeast,
         alt: "Portrait of James Washington",
         rating: 5,
         text: "From the very first meeting, they understood my vision and helped me find the perfect property. Their attention to detail and commitment to client satisfaction is unmatched."
