@@ -179,6 +179,7 @@ const Projects = () => {
       showNotification("Please fill all required fields and upload a photo.", "error");
       return;
     }
+
     const photoURL = URL.createObjectURL(newEstate.photo);
     const basePrice = Number(newEstate.price);
     const finalPrice = basePrice + basePrice * 0.15;
@@ -504,18 +505,7 @@ const Projects = () => {
               {filters.propertyType && (
                 <span className="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
                   <span className="font-medium">Type:</span> {filters.propertyType}
-                </span>
-              )}
-              {filters.bedrooms && (
-                <span className="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                  <span className="font-medium">Bedrooms:</span> {filters.bedrooms}
-                </span>
-              )}
-              {filters.transactionType && (
-                <span className="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
-                  <span className="font-medium">Transaction:</span> {filters.transactionType}
-                </span>
-              )}
+
               {(filters.minPrice || filters.maxPrice) && (
                 <span className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full flex items-center gap-1">
                   <span className="font-medium">Price:</span> 
@@ -993,7 +983,7 @@ const Projects = () => {
         <option value="Multi-level Parking">Multi-level Parking</option>
       </select>
 
-    
+
 
     </div>
   </div>
