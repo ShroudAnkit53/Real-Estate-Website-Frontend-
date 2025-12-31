@@ -46,3 +46,4 @@ This project focuses on providing a clean UI/UX for showcasing property listings
 ---
 
 
+i am taking duration and end date as input right ,so i don't think taking start date as input is necassary ,i want to make sure my site automativally calculates and enters the start date in the card ,also there is an option to add additional features in old form but isn;t available in new one 

@@ -39,7 +39,6 @@ const Projects = () => {
       floors: "",
   units: "",
   parking: "",
-  startDate: ""
     },
     photo: null,
     propertyType: "Residential",
@@ -180,7 +179,6 @@ const Projects = () => {
       showNotification("Please fill all required fields and upload a photo.", "error");
       return;
     }
-
     const photoURL = URL.createObjectURL(newEstate.photo);
     const basePrice = Number(newEstate.price);
     const finalPrice = basePrice + basePrice * 0.15;
@@ -827,9 +825,12 @@ const Projects = () => {
       >
         <option value="Purchase">Purchase</option>
         <option value="Rent">Rent</option>
-        <option value="Rent & Purchase">Rent & Purchase</option>
+        <option value="Lease">For Lease</option>
       </select>
- <select
+ 
+
+
+      <select
         className="border rounded p-2 col-span-2"
         value={newEstate.propertyType}
         onChange={(e) =>
@@ -843,6 +844,7 @@ const Projects = () => {
       </select>
     </div>
   </div>
+
   {/* SECTION: Description */}
   <div>
     <h4 className="font-semibold mb-2 text-gray-700">Description</h4>
@@ -859,7 +861,7 @@ const Projects = () => {
     </p>
   </div>
 
-{/* SECTION: Timeline */}
+  {/* SECTION: Timeline */}
   <div>
     <h4 className="font-semibold mb-3 text-gray-700">Timeline & Specs</h4>
 
@@ -875,6 +877,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, duration: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
 
@@ -889,22 +895,36 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, area: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
+<div>
+  <label className="text-sm font-medium">Completion / End Date</label>
+  <input
+    type="date"
+    className="border rounded p-2 w-full mt-1 focus:ring focus:ring-blue-200"
+     min={newEstate.timeline.startDate || undefined}
+    value={newEstate.timeline.completionDate}
+    onChange={(e) =>
+      setNewEstate({
+        ...newEstate,
+        timeline: {
+          ...newEstate.timeline,
+          completionDate: e.target.value,
+        },
+      })
+    }
+  />
+  <p className="text-xs text-gray-500 mt-1">
+    Select the expected project completion date.
+  </p>
+</div>
+
 
       <input
-        type="date"
-        className="border rounded p-2"
-        value={newEstate.timeline.completionDate}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, completionDate: e.target.value },
-          })
-        }
-      />
-
-      <input
-        type="text"
+        type="number"
         placeholder="Team Size"
         className="border rounded p-2"
         value={newEstate.timeline.teamSize}
@@ -914,6 +934,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, teamSize: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
       <input
@@ -927,6 +951,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, floors: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
       <input
@@ -940,6 +968,10 @@ const Projects = () => {
             timeline: { ...newEstate.timeline, units: e.target.value },
           })
         }
+        onWheel={(e) => e.target.blur()}
+  onKeyDown={(e) =>
+    (e.key === "ArrowUp" || e.key === "ArrowDown") && e.preventDefault()
+  }
       />
 
       {/* Parking Select */}
@@ -961,17 +993,8 @@ const Projects = () => {
         <option value="Multi-level Parking">Multi-level Parking</option>
       </select>
 
-      <input
-        type="date"
-        className="border rounded p-2 col-span-2"
-        value={newEstate.timeline.startDate}
-        onChange={(e) =>
-          setNewEstate({
-            ...newEstate,
-            timeline: { ...newEstate.timeline, startDate: e.target.value },
-          })
-        }
-      />
+    
+
     </div>
   </div>
 
@@ -1524,7 +1547,7 @@ const Projects = () => {
 
   <div className="text-center">
     <div className="text-2xl font-bold text-blue-600">
-      {timeline.completed || timeline.completionDate || timeline.startDate || "N/A"}
+      {timeline.completionDate || "N/A"}
     </div>
     <div className="text-sm text-gray-500">
       {timeline.completed
@@ -1573,14 +1596,6 @@ const Projects = () => {
     </div>
   )}
 
-  {timeline.startDate && (
-    <div className="text-center">
-      <div className="text-2xl font-bold text-blue-600">
-        {timeline.startDate}
-      </div>
-      <div className="text-sm text-gray-500">Start Date</div>
-    </div>
-  )}
 </>
 
                           );

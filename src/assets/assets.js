@@ -57,7 +57,8 @@ export const projectsData = [
         timeline: {
             duration: "12 Months",
             area: "5,000 Sq. Ft.",
-            completed: "2023",
+            completionDate
+: "05 August 2023",
             teamSize: "50+ Members"
         },
         specifications: {
@@ -88,7 +89,8 @@ export const projectsData = [
         timeline: {
             duration: "14 Months",
             area: "4,200 Sq. Ft.",
-            completionDate: "Q4 2024",
+            completionDate
+: "23 November 2024",
             teamSize: "40+ Members"
         },
         specifications: {
@@ -119,7 +121,8 @@ export const projectsData = [
         timeline: {
             duration: "18 Months",
             area: "8,500 Sq. Ft.",
-            completed: "2022",
+            completionDate
+: "11 June 2022",
             teamSize: "75+ Members"
         },
         specifications: {
@@ -150,7 +153,8 @@ export const projectsData = [
         timeline: {
             duration: "24 Months",
             area: "12,000 Sq. Ft.",
-            startDate: "Q1 2024",
+            completionDate
+: "12 jan 2024",
             teamSize: "100+ Members"
         },
         specifications: {
@@ -181,7 +185,8 @@ export const projectsData = [
         timeline: {
             duration: "20 Months",
             area: "6,800 Sq. Ft.",
-            completed: "2023",
+            completionDate
+: "19 march 2023",
             teamSize: "60+ Members"
         },
         specifications: {
@@ -212,7 +217,8 @@ export const projectsData = [
         timeline: {
             duration: "16 Months",
             area: "3,500 Sq. Ft.",
-            completionDate: "Q3 2024",
+            completionDate
+: "4 August 2024",
             teamSize: "35+ Members"
         },
         specifications: {
