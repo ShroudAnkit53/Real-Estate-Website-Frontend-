@@ -14,9 +14,9 @@ import project_img_4 from './project_img_4.jpg'
 import project_img_5 from './project_img_5.jpg'
 import project_img_6 from './project_img_6.jpg'
 
-import mrbeast from './mrbeast.png'
+import mrbeast from './mrbeast1.png'
 import Donald from './licensed-image_circle.png'
-import gandhi from './gandhi_circle_face.png'
+import messi from './messi.png'
 
 export const assets = {
     logo,
@@ -36,7 +36,7 @@ export const assets = {
     right_arrow,
     mrbeast,
     Donald,
-    gandhi
+    messi
 }
 
 export const projectsData = [
@@ -239,23 +239,23 @@ export const testimonialsData = [
         name: "Donald Trump",
         title: "US President",
         image: Donald,
-        alt: "Portrait of Donald Jackman",
+        alt: "Portrait of Donald Trump",
         rating: 5,
         text: "From the very first meeting, they understood my vision and helped me find the perfect property. Their attention to detail and commitment to client satisfaction is unmatched."
     },
     {
-        name: "Mahatma Gandhi",
-        title: "Freedom Fighter",
-        image: gandhi,
-        alt: "Portrait of Richard Nelson",
+        name: "Lionel Messi",
+        title: "Argentine Footballer",
+        image: messi,
+        alt: "Portrait of Lionel Messi",
         rating: 4,
         text: "From the very first meeting, they understood my vision and helped me find the perfect property. Their attention to detail and commitment to client satisfaction is unmatched."
     },
     {
         name: "MrBeast",
-        title: "YouTuber",
+        title: "American YouTuber",
         image: mrbeast,
-        alt: "Portrait of James Washington",
+        alt: "Portrait of MrBeast",
         rating: 5,
         text: "From the very first meeting, they understood my vision and helped me find the perfect property. Their attention to detail and commitment to client satisfaction is unmatched."
     }
